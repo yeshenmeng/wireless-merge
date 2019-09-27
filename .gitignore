@@ -1,0 +1,6 @@
+KEIL-MDK/_build
+KEIL-MDK/JLinkLog.txt
+*.uvoptx
+JLinkLog.txt
+JLinkSettings.ini
+ble_app_blinky_pca10040_s132.uvguix.¡¤

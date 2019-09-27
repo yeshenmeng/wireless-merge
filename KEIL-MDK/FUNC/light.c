@@ -1,0 +1,37 @@
+#include "light.h"
+
+
+void light_init(void) 
+{
+	nrf_gpio_cfg(LED_1_PIN,
+				 NRF_GPIO_PIN_DIR_OUTPUT,
+				 NRF_GPIO_PIN_INPUT_DISCONNECT,
+				 NRF_GPIO_PIN_NOPULL,
+				 NRF_GPIO_PIN_S0S1,
+				 NRF_GPIO_PIN_NOSENSE);
+	
+	nrf_gpio_cfg(LED_2_PIN,
+				 NRF_GPIO_PIN_DIR_OUTPUT,
+				 NRF_GPIO_PIN_INPUT_DISCONNECT,
+				 NRF_GPIO_PIN_NOPULL,
+				 NRF_GPIO_PIN_S0S1,
+				 NRF_GPIO_PIN_NOSENSE);	
+	
+	nrf_gpio_cfg(LED_3_PIN,
+				 NRF_GPIO_PIN_DIR_OUTPUT,
+				 NRF_GPIO_PIN_INPUT_DISCONNECT,
+				 NRF_GPIO_PIN_NOPULL,
+				 NRF_GPIO_PIN_S0S1,
+				 NRF_GPIO_PIN_NOSENSE);	
+	
+	LIGHT_ON();
+}
+
+
+
+
+
+
+
+
+
