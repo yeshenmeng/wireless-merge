@@ -215,8 +215,13 @@ void uart_test(void)
 	if(uart_rec_flag == 1)
 	{
 		uart_rec_flag = 0;
-		uart_collapse_test();
+		printf("lora config param:");
 	}
+//	if(uart_rec_flag == 1)
+//	{
+//		uart_rec_flag = 0;
+//		uart_collapse_test();
+//	}
 }
 
 void uart_run(void)

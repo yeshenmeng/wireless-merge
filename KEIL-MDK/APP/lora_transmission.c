@@ -189,7 +189,7 @@ static void lora_cfg(void)
 	lora_radio_init();
 	nrf_delay_us(100);
 }
-	
+
 static void lora_cfg_default(void)
 {
 	signal_ext_cfg_default();
@@ -763,6 +763,9 @@ lora_obj_t* lora_task_init(lpm_obj_t* lpm_obj)
 	lora_obj.get_rssi = lora_get_rssi;
 	
 	lora_obj.lpm_obj->task_reg(LORA_TASK_ID);
+	
+//	lora_cfg();
+//	lora_cfg_default();
 
 	return &lora_obj;
 }

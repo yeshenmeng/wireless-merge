@@ -76,12 +76,11 @@ static void collapse_sw_spi_cfg(void)
 				 NRF_GPIO_PIN_NOSENSE);
 }
 
-static void collapse_sw_spi_cfg_default(void)
+static void collapse_sw_spi_cfg_low_power(void)
 {
-	nrf_gpio_cfg_default(COLLAPSE_SW_SPI_SCK_PIN);
-	nrf_gpio_cfg_default(COLLAPSE_SW_SPI_MOSI_PIN);
-	nrf_gpio_cfg_default(COLLAPSE_SW_SPI_MISO_PIN);
-	nrf_gpio_cfg_default(COLLAPSE_SW_SPI_CS_PIN);
+	COLLAPSE_SW_SPI_SCK_CLR();
+	COLLAPSE_SW_SPI_MOSI_CLR();
+	COLLAPSE_SW_SPI_CS_DISABLE();
 }
 
 static void collapse_sw_spi_transmit_receive(uint8_t* tx_buf, uint16_t tx_size, uint8_t* rx_buf, uint16_t rx_size)
@@ -155,10 +154,10 @@ static void collapse_cfg(void)
 	collapse_spi_transmit_receive(&dummy, 1, NULL, 0); //切换到SPI通信
 }
 
-/* collapse默认配置 */
-static void collapse_cfg_default(void)
+/* collapse配置低功耗 */
+static void collapse_cfg_low_power(void)
 {
-	collapse_sw_spi_cfg_default();
+	collapse_sw_spi_cfg_low_power();
 }
 
 /* BMA4写数据 */
@@ -346,16 +345,14 @@ static uint16_t bma456_read_fifo(void)
 }
 #endif
 
-uint32_t int_cnt = 0;
 /* 信号中断处理 */
 static void gpiote_in_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
 	uint16_t int_status = 0;
-	collapse_sw_spi_cfg();
+//	collapse_sw_spi_cfg();
 	bma456_read_int_status(&int_status, &bma456_dev);
 	if(pin == ANY_MOTION_INT_PIN && action == NRF_GPIOTE_POLARITY_LOTOHI)
 	{
-		int_cnt++;
 #if (BMA456_USE_FIFO == 0)
 		LIGHT_3_ON();
 		sens_data.temp_c = collapse_read_temperature();
@@ -376,14 +373,14 @@ static void gpiote_in_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_
 			}
 		}
 	}
-	collapse_sw_spi_cfg_default();
+	collapse_sw_spi_cfg_low_power();
 }
 
 static void bma456_evt_handler(void)
 {
 	if(bma456_evt != 0)
 	{
-		collapse_sw_spi_cfg();
+//		collapse_sw_spi_cfg();
 #if (BMA456_USE_FIFO == 1)
 		sens_data.temp_c = collapse_read_temperature();
 		bma4_set_advance_power_save(BMA4_DISABLE, &bma456_dev);
@@ -411,7 +408,7 @@ static void bma456_evt_handler(void)
 		bma456_evt = 0;
 		uint16_t status = 0;
 		bma456_read_int_status(&status, &bma456_dev);
-		collapse_sw_spi_cfg_default();
+		collapse_sw_spi_cfg_low_power();
 	}
 }
 
@@ -537,9 +534,9 @@ void swt_collapse_fifo_in_cb(void)
 {
 	nrf_drv_gpiote_in_event_enable(ANY_MOTION_INT_PIN, true);
 	uint16_t status = 0;
-	collapse_sw_spi_cfg();
+//	collapse_sw_spi_cfg();
 	bma456_read_int_status(&status, &bma456_dev);
-	collapse_sw_spi_cfg_default();
+	collapse_sw_spi_cfg_low_power();
 }
 
 static void collapse_operate(void)
@@ -560,13 +557,13 @@ static void collapse_operate(void)
 		collapse_obj.lpm_obj->task_set_stat(COLLAPSE_TASK_ID, LPM_TASK_STA_RUN);
 		if(collapse_obj.mode == PERIOD_MODE)
 		{
-			collapse_sw_spi_cfg();
+//			collapse_sw_spi_cfg();
 			LIGHT_3_ON();
 			sens_data.temp_c = collapse_read_temperature();
 			bma4_read_accel_xyz(&bma4_data, &bma456_dev);
 			bma456_d_a_convert();
 			LIGHT_3_OFF();
-			collapse_sw_spi_cfg_default();
+			collapse_sw_spi_cfg_low_power();
 		}
 		
 		sens_data_t sens_data_tmp;
@@ -613,7 +610,7 @@ void collapse_iot_set_period(void)
 
 uint16_t collapse_iot_set_accel_slope_threshold(void)
 {
-	collapse_cfg();
+//	collapse_cfg();
 	sys_param_t* param = sys_param_get_handle();
 	collapse_obj.accel_slope_threshold = param->iot_collapse.iot_accel_slope_threshold;
 	struct bma456_anymotion_config anymotion_config = {0};
@@ -622,13 +619,13 @@ uint16_t collapse_iot_set_accel_slope_threshold(void)
 	anymotion_config.nomotion_sel = 0;
 	uint16_t ret = bma456_set_any_motion_config(&anymotion_config, &bma456_dev);
 	nrf_delay_ms(1);
-	collapse_cfg_default();
+	collapse_cfg_low_power();
 	return ret;
 }
 
 uint16_t collapse_iot_set_consecutive_data_points(void)
 {
-	collapse_cfg();
+//	collapse_cfg();
 	sys_param_t* param = sys_param_get_handle();
 	collapse_obj.consecutive_data_points = param->iot_collapse.iot_consecutive_data_points;
 	struct bma456_anymotion_config anymotion_config = {0};
@@ -637,7 +634,7 @@ uint16_t collapse_iot_set_consecutive_data_points(void)
 	anymotion_config.nomotion_sel = 0;
 	uint16_t ret = bma456_set_any_motion_config(&anymotion_config, &bma456_dev);
 	nrf_delay_ms(1);
-	collapse_cfg_default();
+	collapse_cfg_low_power();
 	return ret;
 }
 
@@ -650,7 +647,7 @@ uint16_t collapse_iot_set_mode(void)
 	
 	if(collapse_obj.mode == PERIOD_MODE)
 	{
-		collapse_cfg();
+//		collapse_cfg();
 		
 		/* 关闭硬件中断 */
 		signal_ext_cfg_default();
@@ -685,12 +682,12 @@ uint16_t collapse_iot_set_mode(void)
 		ret |= bma4_set_advance_power_save(BMA4_ENABLE, &bma456_dev);
 		nrf_delay_ms(1);
 		
-		collapse_cfg_default();
+		collapse_cfg_low_power();
 		collapse_obj.period = param->iot_collapse.iot_sample_period;
 	}
 	else if(collapse_obj.mode == TRIGGER_MODE)
 	{
-		collapse_cfg();
+//		collapse_cfg();
 		
 		/* 配置特征 */
 		ret |= collapse_config_feature();
@@ -700,7 +697,7 @@ uint16_t collapse_iot_set_mode(void)
 		ret |= collapse_config_fifo_buffer();
 #endif
 		
-		collapse_cfg_default();
+		collapse_cfg_low_power();
 		collapse_obj.period = param->iot_collapse.iot_trigger_period;
 	}
 	
@@ -748,7 +745,7 @@ collapse_obj_t* collapse_init(lpm_obj_t* lpm_obj)
 #endif
 	}
 
-	collapse_cfg_default();								//失能SPI接口
+	collapse_cfg_low_power();							//失能SPI接口
 	
 	return &collapse_obj;
 }

@@ -136,6 +136,9 @@ void lpm_enter_handler(void)
 	if(nrf_sdh_is_enabled() == true)
 	{
 		sd_power_dcdc_mode_set(0);
+//		sd_clock_hfclk_release();
+//		uint32_t status = 1;
+//		while(status == 1) sd_clock_hfclk_is_running(&status);
 	}
 	else
 	{
@@ -154,6 +157,9 @@ void lpm_exit_handler(void)
 	if(nrf_sdh_is_enabled() == true)
 	{
 		sd_power_dcdc_mode_set(1);
+//		sd_clock_hfclk_request();
+//		uint32_t status = 0;
+//		while(status == 0) sd_clock_hfclk_is_running(&status);
 	}
 	else
 	{
@@ -167,6 +173,8 @@ int main(void)
 {
 	/**********************************硬件设备初始化**********************************/
 	NRF_POWER->DCDCEN = 1; 									//打开DCDC
+//	NRF_CLOCK->TASKS_HFCLKSTART = 1; //启动外部时钟源
+//	while(!NRF_CLOCK->EVENTS_HFCLKSTARTED); //等待外部时钟源启动完成
 	lfclk_cfg(); 											//RTC时钟源设置
 	light_init(); 											//设备指示灯初始化
 	timers_init(); 											//定时器初始化基于RTC1
@@ -191,7 +199,7 @@ int main(void)
 
 	/**********************************BLE初始化**********************************/
 	ble_softdev_init();
-
+	
 	/**********************************应用初始化**********************************/
 	m_lpm = lpm_init(); 									//低功耗管理初始化
 	m_ble = ble_init(m_lpm); 								//BLE任务初始化	

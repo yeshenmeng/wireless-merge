@@ -7,7 +7,7 @@ static sys_param_t sys_param;
 
 void sys_param_init(void)
 {
-//	flash_read(SYS_PARAM_FLASH_PAGE_ADDR, (uint8_t *)&sys_param, sizeof(sys_param));
+	flash_read(SYS_PARAM_FLASH_PAGE_ADDR, (uint8_t *)&sys_param, sizeof(sys_param));
 	
 	if(sys_param.object_version != INCLINOMETER_VERSION &&
 	   sys_param.object_version != COLLAPSE_VERSION)

@@ -33,7 +33,7 @@
 
 /* 设备配置参数 */
 #define SYS_PARAM_DEV_GATEWAY_ADDR					{0x64,0x01,0X20,0X19,0X09,0X16,0X00,0X01} 	//网关地址
-#define SYS_PARAM_DEV_LONG_ADDR						{0XC8,0X01,0X20,0X19,0X08,0X12,0X00,0X02} 	//测点长地址
+#define SYS_PARAM_DEV_LONG_ADDR						{0XC9,0X01,0X20,0X19,0X08,0X12,0X00,0X02} 	//测点长地址
 #define SYS_PARAM_DEV_SHORT_ADDR					{0x01,0x01} 								//测点短地址
 
 /* IOT倾角配置参数 */
@@ -53,7 +53,7 @@
 
 /* LORA任务参数 */
 #define SWT_LORA_TIME_SLICE_TIME					30*1000u	//LORA数据发送时间片时间
-#define LORA_RX_TIMEOUT_BASE						200u 		//LORA数据接收超时时间基数
+#define LORA_RX_TIMEOUT_BASE						3000u 		//LORA数据接收超时时间基数
 #define LORA_TX_MAX_DELAY_TIME						5*1000u		//LORA数据发送失败最大延时时间
 #define LORA_TX_MAX_FIAL_TIMES						~0u			//LORA数据发送失败最大次数
 #define LORA_DELAY_BASE_TIME						200u		//LORA数据发送失败延时基数
@@ -61,13 +61,13 @@
 #define LORA_RANDOME_DELAY_LOWER					10u			//LORA数据发送失败随机延时时间下限
 
 /* 软件/硬件信号检测功能开关 */
-#define SIGNAL_DET_SW								1 			//软件信号检测开关
-#define SIGNAL_DET_HW								0 			//硬件信号检测开关
+#define SIGNAL_DET_SW								0 			//软件信号检测开关
+#define SIGNAL_DET_HW								1 			//硬件信号检测开关
 #define BAT_SOC_DET_SW								0 			//软件电池电量检测开关
 #define BAT_SOC_DET_HW								0 			//硬件电池电量检测开关 
 
 /* 软件信号检测任务参数 */
-#define SIGNAL_DET_TIME_SLICE						30*1000u 	//信号检测时间片
+#define SIGNAL_DET_TIME_SLICE						10*1000u 	//信号检测时间片
 
 /* 设备任务ID设置 */
 #define LORA_TASK_ID								1 			//LORA任务ID
