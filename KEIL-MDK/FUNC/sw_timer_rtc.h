@@ -29,6 +29,7 @@ typedef struct {
 	sw_timer_t* bat_soc;
 	sw_timer_t* collapse_fifo_in;
 	sw_timer_t* collapse_fifo_out;
+	sw_timer_t* llrt_timer;
 }swt_mod_t;
 
 void swt_init(void);

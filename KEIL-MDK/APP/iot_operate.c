@@ -4,6 +4,7 @@
 #include "host_net_swap.h"
 #include "lora_transmission.h"
 #include "wireless_comm_services.h"
+#include "sw_bat_soc.h"
 
 
 static iot_dev_t IoT_dev;
@@ -472,6 +473,14 @@ static void iot_i_operate(void)
 		ble_char_update_handle->dev_long_addr_update(value);
 	}
 
+#if BAT_SOC_DET_SW == 1
+	if(sw_bat_soc_get_handle()->get_update_flag())
+	{
+		IoT_dev.gas_gauge_flag = 1;
+		IoT_dev.gas_gauge = sw_bat_soc_get_handle()->get_gas_gauge();
+	}
+#endif
+	
 	/* 处理设备电池属性数据同时更新数据到蓝牙协议中 */
 	if(IoT_dev.gas_gauge_flag == 1)
 	{
@@ -599,6 +608,14 @@ static void iot_c_operate(void)
 		ble_char_update_handle->dev_long_addr_update(value);
 	}
 
+#if BAT_SOC_DET_SW == 1
+	if(sw_bat_soc_get_handle()->get_update_flag())
+	{
+		IoT_dev.gas_gauge_flag = 1;
+		IoT_dev.gas_gauge = sw_bat_soc_get_handle()->get_gas_gauge();
+	}
+#endif
+	
 	/* 处理设备电池属性数据同时更新数据到蓝牙协议中 */
 	if(IoT_dev.gas_gauge_flag == 1)
 	{

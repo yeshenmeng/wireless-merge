@@ -5,6 +5,7 @@
 #include "sw_bat_soc.h"
 
 
+static uint16_t ble_conn_time = 0;
 static uint8_t ble_rssi_flag = 0;
 static ble_state_t ble_state;
 static ble_obj_t ble_obj;
@@ -161,7 +162,7 @@ static void ble_task_operate(void)
 			timer->ble_adv->stop(); /* 停止BLE广播定时器 */
 			timer->ble_adv_led->stop();
 			sys_param_t* param = sys_param_get_handle();
-			timer->ble_adv_led->start((param->ble_min_conn_interval+param->ble_max_conn_interval)/2);
+			timer->ble_adv_led->start(ble_conn_time);
 			LIGHT_2_ON();
 			ble_obj.state = ble_state;
 			ble_state = BLE_STA_IDLE;
@@ -219,6 +220,9 @@ static void ble_task_operate(void)
 
 ble_obj_t* ble_init(lpm_obj_t* lpm_obj)
 {
+	sys_param_t* param = sys_param_get_handle();
+	ble_conn_time = param->ble_max_conn_interval;
+	
 	ble_obj.param.is_idle_enter_lp = ENABLE;
 	ble_state = BLE_STA_IDLE;
 	ble_obj.state = ble_state;

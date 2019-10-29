@@ -3,6 +3,7 @@
 #include "sys_param.h"
 #include "calendar.h"
 #include "light.h"
+#include "lora_lost_rate_test.h"
 
 
 static slp_state_t slp_state;
@@ -53,6 +54,11 @@ static void slp_operate(void)
 			{
 				sample_interval = param->iot_collapse.iot_period;
 			}
+			if(llrt_status_get() == LLRT_RUN)
+			{
+				llrt_mod_t* llrt_mod = llrt_get_handle();
+				sample_interval = llrt_mod->comm_interval;
+			}
 			slp_obj.sleep_time = sample_interval - time_stamp % sample_interval;
 			timer->sys_low_power->start(slp_obj.sleep_time*1000);
 			slp_obj.lpm_obj->task_set_stat(SLP_TASK_ID, LPM_TASK_STA_LP);
@@ -73,6 +79,15 @@ static void slp_operate(void)
 			break;
 		}
 	}
+}
+
+void slp_reset(void)
+{
+	slp_state = SLP_IDLE;
+	swt_mod_t* timer = swt_get_handle();
+	timer->sys_low_power->stop();
+	slp_obj.state = SLP_IDLE;
+	slp_obj.lpm_obj->task_set_stat(SLP_TASK_ID, LPM_TASK_STA_STOP);
 }
 
 slp_obj_t* slp_task_init(lpm_obj_t* lpm_obj)

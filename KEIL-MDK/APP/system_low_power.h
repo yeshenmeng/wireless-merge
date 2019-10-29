@@ -22,6 +22,7 @@ typedef struct {
 	void (*task_operate)(void);
 }slp_obj_t;
 
+void slp_reset(void);
 slp_obj_t* slp_task_init(lpm_obj_t* lpm_obj);
 
 #endif

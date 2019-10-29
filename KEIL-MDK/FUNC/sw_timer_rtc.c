@@ -436,7 +436,7 @@ static void swt_collapse_fifo_out_del(void)
 
 sw_timer_t* swt_collapse_fifo_out_create(void)
 {
-	swt_collapse_fifo_out.process_id = 109;
+	swt_collapse_fifo_out.process_id = 110;
 	swt_collapse_fifo_out.mode = APP_TIMER_MODE_SINGLE_SHOT/*APP_TIMER_MODE_REPEATED*/;
 	swt_collapse_fifo_out.timeout_cb = swt_collapse_fifo_out_cb;
 	swt_collapse_fifo_out.start = swt_collapse_fifo_out_start;
@@ -448,6 +448,46 @@ sw_timer_t* swt_collapse_fifo_out_create(void)
 					 swt_collapse_fifo_out.timeout_cb);
 
 	return &swt_collapse_fifo_out;
+}
+
+/**********************************LORA通信质量测试软件定时器**********************************/
+static sw_timer_t swt_llrt_timer;
+APP_TIMER_DEF(llrt_timer_id);
+__weak void swt_llrt_timer_cb(void* param)
+{
+	return;
+}
+
+static void swt_llrt_timer_start(uint32_t time)
+{
+	swt_sys_idle_stop();
+	app_timer_start(llrt_timer_id, APP_TIMER_TICKS(time), NULL);
+}
+
+static void swt_llrt_timer_stop(void)
+{
+	app_timer_stop(llrt_timer_id);
+}
+
+static void swt_llrt_timer_del(void)
+{
+	return;
+}
+
+sw_timer_t* swt_llrt_timer_create(void)
+{
+	swt_llrt_timer.process_id = 111;
+	swt_llrt_timer.mode = APP_TIMER_MODE_SINGLE_SHOT/*APP_TIMER_MODE_REPEATED*/;
+	swt_llrt_timer.timeout_cb = swt_llrt_timer_cb;
+	swt_llrt_timer.start = swt_llrt_timer_start;
+	swt_llrt_timer.stop = swt_llrt_timer_stop;
+	swt_llrt_timer.del = swt_llrt_timer_del;
+	
+	app_timer_create(&llrt_timer_id,
+					 swt_llrt_timer.mode,
+					 swt_llrt_timer.timeout_cb);
+
+	return &swt_llrt_timer;
 }
 
 void swt_init(void)
@@ -463,6 +503,7 @@ void swt_init(void)
 	swt_mod.bat_soc = &swt_bat_soc;
 	swt_mod.collapse_fifo_in = &swt_collapse_fifo_in;
 	swt_mod.collapse_fifo_out = &swt_collapse_fifo_out;
+	swt_mod.llrt_timer = &swt_llrt_timer;
 	
 	swt_sys_idle_create();
 	swt_sys_lp_create();
@@ -475,6 +516,7 @@ void swt_init(void)
 	swt_bat_soc_create();
 	swt_collapse_fifo_in_create();
 	swt_collapse_fifo_out_create();
+	swt_llrt_timer_create();
 }
 
 swt_mod_t* swt_get_handle(void)

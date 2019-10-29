@@ -3,36 +3,41 @@
 #include "sys_param.h"
 #include "flash.h"
 #include "string.h"
+#include "math.h"
 
+
+const uint8_t lora_test_bw = 8;
+const uint8_t lora_test_sf = 7;
+const float lora_tx_fail_rx_power = 11.05118 - 2.159261; //lora发送失败后等待接收过程（3s的等待时间）的功耗uAh
 
 /**************************常量区**************************/
-const float lora_tx_fail_power_tb[] = { 			//LORA在不同功率下发送失败的功耗
-	0, /*-9*/  0, /*-8*/  0, /*-7*/  0, /*-6*/
-	0, /*-5*/  0, /*-4*/  0, /*-3*/  0, /*-2*/
-	0, /*-1*/  0, /*+0*/  0, /*+1*/  0, /*+2*/
-	0, /*+3*/  0, /*+4*/  0, /*+5*/  0, /*+6*/
-	0, /*+7*/  0, /*+8*/  0, /*+9*/  0, /*+10*/
+const float lora_tx_fail_power_tb[] = { 			//LORA在不同功率下发送失败的功耗uAh
+	9.520373, /*-9*/  0, /*-8*/  0, /*-7*/  0, /*-6*/
+	9.576286, /*-5*/  0, /*-4*/  0, /*-3*/  0, /*-2*/
+	0, /*-1*/  9.603709, /*+0*/  0, /*+1*/  0, /*+2*/
+	0, /*+3*/  0, /*+4*/  9.79994, /*+5*/  0, /*+6*/
+	0, /*+7*/  0, /*+8*/  0, /*+9*/  10.041489, /*+10*/
 	0, /*+11*/ 0, /*+12*/ 0, /*+13*/ 0, /*+14*/
-	0, /*+15*/ 0, /*+16*/ 0, /*+17*/ 0, /*+18*/
-	0, /*+19*/ 0.002, /*+20*/ 0, /*+21*/ 0, /*+22*/
+	10.437215, /*+15*/ 0, /*+16*/ 0, /*+17*/ 0, /*+18*/
+	0, /*+19*/ 11.051179, /*+20*/ 0, /*+21*/ 0, /*+22*/
 };
 
-const float lora_tx_success_power_tb[] = { 			//LORA在不同功率下发送成功的功耗
-	0, /*-9*/  0, /*-8*/  0, /*-7*/  0, /*-6*/
-	0, /*-5*/  0, /*-4*/  0, /*-3*/  0, /*-2*/
-	0, /*-1*/  0, /*+0*/  0, /*+1*/  0, /*+2*/
-	0, /*+3*/  0, /*+4*/  0, /*+5*/  0, /*+6*/
-	0, /*+7*/  0, /*+8*/  0, /*+9*/  0, /*+10*/
+const float lora_tx_success_power_tb[] = { 			//LORA在不同功率下发送成功的功耗uAh
+	0.589769, /*-9*/  0, /*-8*/  0, /*-7*/  0, /*-6*/
+	0.652117, /*-5*/  0, /*-4*/  0, /*-3*/  0, /*-2*/
+	0, /*-1*/  0.788696, /*+0*/  0, /*+1*/  0, /*+2*/
+	0, /*+3*/  0, /*+4*/  0.908141, /*+5*/  0, /*+6*/
+	0, /*+7*/  0, /*+8*/  0, /*+9*/  1.16516, /*+10*/
 	0, /*+11*/ 0, /*+12*/ 0, /*+13*/ 0, /*+14*/
-	0, /*+15*/ 0, /*+16*/ 0, /*+17*/ 0, /*+18*/
-	0, /*+19*/ 0.001, /*+20*/ 0, /*+21*/ 0, /*+22*/
+	1.585567, /*+15*/ 0, /*+16*/ 0, /*+17*/ 0, /*+18*/
+	0, /*+19*/ 2.159261, /*+20*/ 0, /*+21*/ 0, /*+22*/
 };
 
-const float bat_cap = 8500; 						//电池容量
-const float ble_pre_power = 4;						//蓝牙单位时间功耗
-const float standby_per_power = 0.02; 				//设备待机单位时间功耗
-const float sca_power = 0.0006; 					//倾角采样任务一次消耗的电量
-const float off_power = 0; 							//电池无法给设备供电时软件计算的最后一次剩余容量
+const float bat_cap = 8500000; 						//电池容量uAh
+const float ble_pre_power = 1805.716252;			//蓝牙单位时间功耗uA
+const float standby_per_power = 24.393651; 			//设备待机单位时间功耗uA
+const float sca_power = 0.414407; 					//采样任务一次耗电量uAh
+const float off_power = 0; 							//电池无法给设备供电时软件计算的最后一次剩余容量uAh
 
 /**************************静态变量区**************************/
 static float lora_tx_fail_power;					//LORA发送失败一次消耗的电量，与发送功率有关
@@ -45,70 +50,97 @@ static uint8_t m_pre_cap_percent = 0;
 static sw_bat_soc_t m_sw_bat_soc;
 static sw_bat_soc_mod_t sw_bat_soc_mod;
 
-static float sw_bat_soc_lora_tx_fail_power_get(int8_t power_level)
+static float sw_bat_soc_lora_tx_fail_power_get(int8_t power_level, uint8_t bw, uint8_t sf)
 {
 	if(!IS_VALID_POWER_LEVEL(power_level))
 	{
 		return 0;
 	}
-
+	
+	int i;
 	float power;
 	int8_t index = power_level - LORA_MIN_POWER_LEVEL;
-	for(int i=0;;i++)
+	
+	for(i = 0; (index + i) < sizeof(lora_tx_fail_power_tb); i++)
 	{
-		if((index + i) <= (sizeof(lora_tx_fail_power_tb) - 1) &&
-			lora_tx_fail_power_tb[index+i] != 0)
+		if(lora_tx_fail_power_tb[index+i] != 0)
 		{
 			power = lora_tx_fail_power_tb[index+i];
 			break;
 		}
-		
-		if((index - i) >= 0 && lora_tx_fail_power_tb[index-i] != 0)
+	}
+	
+	if((index + i) >= sizeof(lora_tx_fail_power_tb))
+	{
+		for(i = 0; i < index; i++)
 		{
-			power = lora_tx_fail_power_tb[index-i];
-			break;
+			if(lora_tx_fail_power_tb[index+i] != 0)
+			{
+				power = lora_tx_fail_power_tb[index+i];
+				break;
+			}
 		}
 		
-		if((index + i) >= sizeof(lora_tx_fail_power_tb) && (index - i) < 0)
+		if(i >= index)
 		{
 			power = 0;
-			break;
 		}
 	}
+	
+	/* 计算功率系数 */
+	float power_ratio = pow(2, lora_test_bw-bw);
+	power_ratio *= pow(2, sf-lora_test_sf);
+	
+	if(power != 0 && power_ratio != 1)
+	{
+		power = (power - lora_tx_fail_rx_power) * power_ratio + lora_tx_fail_rx_power;
+	}
+	
 	return power;
 }
 
-static float sw_bat_soc_lora_tx_success_power_get(int8_t power_level)
+static float sw_bat_soc_lora_tx_success_power_get(int8_t power_level, uint8_t bw, uint8_t sf)
 {
 	if(!IS_VALID_POWER_LEVEL(power_level))
 	{
 		return 0;
 	}
-
+	
+	int i;
 	float power;
 	int8_t index = power_level - LORA_MIN_POWER_LEVEL;
-	for(int i=0;;i++)
+	
+	for(i = 0; (index + i) < sizeof(lora_tx_success_power_tb); i++)
 	{
-		if((index + i) <= (sizeof(lora_tx_success_power_tb) - 1) &&
-			lora_tx_success_power_tb[index+i] != 0)
+		if(lora_tx_success_power_tb[index+i] != 0)
 		{
 			power = lora_tx_success_power_tb[index+i];
 			break;
 		}
-		
-		if((index - i) >= 0 && lora_tx_success_power_tb[index-i] != 0)
+	}
+	
+	if((index + i) >= sizeof(lora_tx_success_power_tb))
+	{
+		for(i = 0; i < index; i++)
 		{
-			power = lora_tx_success_power_tb[index-i];
-			break;
+			if(lora_tx_success_power_tb[index+i] != 0)
+			{
+				power = lora_tx_success_power_tb[index+i];
+				break;
+			}
 		}
 		
-		if((index + i) >= sizeof(lora_tx_success_power_tb) && (index - i) < 0)
+		if(i >= index)
 		{
 			power = 0;
-			break;
 		}
 	}
-	return power;
+	
+	/* 计算功率系数 */
+	float power_ratio = pow(2, lora_test_bw-bw);
+	power_ratio *= pow(2, sf-lora_test_sf);
+	
+	return power *= power_ratio;
 }
 
 static void sw_bat_soc_power_calc(void)
@@ -148,7 +180,7 @@ static void sw_bat_soc_sca_power_add(void)
 static void sw_bat_soc_lora_tx_fail_power_add(void)
 {
 	sys_param_t* param = sys_param_get_handle();
-	lora_tx_fail_power = sw_bat_soc_lora_tx_fail_power_get(param->lora_power);
+	lora_tx_fail_power = sw_bat_soc_lora_tx_fail_power_get(param->lora_power, param->lora_bw, param->lora_sf);
 	m_sw_bat_soc.lora_tx_fail_total_cap += lora_tx_fail_power;
 	m_sw_bat_soc.lora_tx_fail_times++;
 	sw_bat_soc_power_calc();
@@ -157,7 +189,7 @@ static void sw_bat_soc_lora_tx_fail_power_add(void)
 static void sw_bat_soc_lora_tx_success_power_add(void)
 {
 	sys_param_t* param = sys_param_get_handle();
-	lora_tx_success_power = sw_bat_soc_lora_tx_success_power_get(param->lora_power);
+	lora_tx_success_power = sw_bat_soc_lora_tx_success_power_get(param->lora_power, param->lora_bw, param->lora_sf);
 	m_sw_bat_soc.lora_tx_success_total_cap += lora_tx_success_power;
 	m_sw_bat_soc.lora_tx_success_times++;
 	sw_bat_soc_power_calc();
@@ -206,11 +238,16 @@ static uint8_t sw_bat_soc_get_update_flag(void)
 	return flag;
 }
 
+static uint8_t sw_bat_soc_get_gas_gauge(void)
+{
+	return m_sw_bat_soc.cap_percent + 1;
+}
+
 sw_bat_soc_mod_t* sw_bat_soc_init(void)
 {
-	flash_read(SW_BAT_SOC_FLASH_PAGE_ADDR, (uint8_t *)&m_sw_bat_soc, sizeof(m_sw_bat_soc));
+//	flash_read(SW_BAT_SOC_FLASH_PAGE_ADDR, (uint8_t *)&m_sw_bat_soc, sizeof(m_sw_bat_soc));
 	
-	if(m_sw_bat_soc.data_save_flag == 0XFF)
+//	if(m_sw_bat_soc.data_save_flag == 0XFF)
 	{
 		memset(&m_sw_bat_soc, 0X00, sizeof(m_sw_bat_soc));
 		m_sw_bat_soc.cap_percent = 100;
@@ -228,6 +265,7 @@ sw_bat_soc_mod_t* sw_bat_soc_init(void)
 	sw_bat_soc_mod.standby_power_add = sw_bat_soc_standby_power_add;
 	sw_bat_soc_mod.ble_power_add = sw_bat_soc_ble_power_add;
 	sw_bat_soc_mod.get_update_flag = sw_bat_soc_get_update_flag;
+	sw_bat_soc_mod.get_gas_gauge = sw_bat_soc_get_gas_gauge;
 	
 	m_pre_cap_percent = m_sw_bat_soc.cap_percent;
 	m_time_base = m_sw_bat_soc.dev_run_time;
@@ -246,9 +284,9 @@ uint8_t sw_bat_soc_param_to_flash(void)
 	if(m_sw_bat_soc.data_save_flag == 1)
 	{
 		m_sw_bat_soc.data_save_flag = 0;
-		return flash_write(SW_BAT_SOC_FLASH_PAGE_ADDR,
-						  (uint32_t*)&m_sw_bat_soc,
-						   sizeof(m_sw_bat_soc)%4==0?sizeof(m_sw_bat_soc)/4:(sizeof(m_sw_bat_soc)/4+1));
+//		return flash_write(SW_BAT_SOC_FLASH_PAGE_ADDR,
+//						  (uint32_t*)&m_sw_bat_soc,
+//						   sizeof(m_sw_bat_soc)%4==0?sizeof(m_sw_bat_soc)/4:(sizeof(m_sw_bat_soc)/4+1));
 	}
 	return 0;
 }

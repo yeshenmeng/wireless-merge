@@ -6,6 +6,7 @@
 #include "sw_bat_soc.h"
 #include "signal_detect.h"
 #include "nrf_drv_gpiote.h"
+#include "lora_lost_rate_test.h"
 
 
 #define CHECK_TASK_EVT(evt)			(sys_task_evt & evt)
@@ -48,7 +49,7 @@ void sys_startup(void)
 #endif
 	}
 	
-//	SET_TASK_EVT(SYS_TASK_EVT_BLE);
+	SET_TASK_EVT(SYS_TASK_EVT_BLE);
 }
 
 void sys_task_schd(void)
@@ -98,6 +99,8 @@ void sys_task_schd(void)
 /* 蓝牙任务停止事件 */
 void ble_task_stop_handler(void* param)
 {
+	SET_TASK_EVT(SYS_TASK_EVT_BLE);
+	
 	if(lora_disconn == 1)
 	{
 		ble_state_t ble_state = *(ble_state_t*)param;
@@ -142,7 +145,7 @@ void collapse_task_stop_handler(void* param)
 		/* 周期模式 */
 		if(sys_param->iot_clinometer.iot_mode == 0)
 		{
-			SET_TASK_EVT(SYS_TASK_EVT_LORA); //启动LORA传输任务
+			SET_TASK_EVT(SYS_TASK_EVT_LORA);
 		}
 //		/* 相对阈值模式 */
 //		else if(sys_param->iot_mode == 1)
@@ -176,7 +179,7 @@ void collapse_task_stop_handler(void* param)
 	{
 		if(*(collapse_state_t*)param == COLLAPSE_ACTIVE)
 		{
-			SET_TASK_EVT(SYS_TASK_EVT_LORA); //启动LORA任务
+			SET_TASK_EVT(SYS_TASK_EVT_LORA);
 		}
 	}
 	
@@ -191,21 +194,27 @@ void lora_task_stop_handler(void* param)
 {
 	uint8_t lora_state = *(uint8_t*)param;
 	
-	/* LORA从未连接态到未连接态 */
-	if(lora_state == LORA_OUT_STATE_OFFLINE)
+	/* LORA通信测试状态 */
+	if(lora_state == LORA_OUT_STATE_TEST)
+	{
+		llrt_tx_add();
+		llrt_lost_rate_calc();
+		SET_TASK_EVT(SYS_TASK_EVT_SYS_LP); 
+	}
+	else if(lora_state == LORA_OUT_STATE_OFFLINE)
 	{
 		lora_disconn = 1;
-		SET_TASK_EVT(SYS_TASK_EVT_BLE);	//启动蓝牙任务重新配置网关
+		SET_TASK_EVT(SYS_TASK_EVT_BLE);						//启动蓝牙任务重新配置网关
 	}
 	/* LORA从连接态到未连接态 */
 	else if(lora_state == LORA_OUT_STATE_DISCON)
 	{
-		SET_TASK_EVT(SYS_TASK_EVT_LORA); //重新连接网关
+		SET_TASK_EVT(SYS_TASK_EVT_LORA); 					//重新连接网关
 	}
 	/* LORA从未连接态到连接态 */
 	else if(lora_state == LORA_OUT_STATE_LINK)
 	{
-		SET_TASK_EVT(SYS_TASK_EVT_COLLAPSE); //连接网关成功设置崩塌计任务运行
+		SET_TASK_EVT(SYS_TASK_EVT_COLLAPSE); 				//连接网关成功设置崩塌计任务运行
 	}
 	/* LORA从连接态到连接态 */
 	else if(lora_state == LORA_OUT_STATE_CONNECT)
@@ -249,7 +258,15 @@ void slp_task_stop_handler(void* param)
 	sw_bat_soc_mod->dev_run_time_add();
 	sw_bat_soc_mod->standby_power_add();
 #endif
-	SET_TASK_EVT(SYS_TASK_EVT_COLLAPSE); //启动崩塌计任务
+	
+	if(llrt_status_get() == LLRT_RUN)
+	{
+		SET_TASK_EVT(SYS_TASK_EVT_LORA);
+	}
+	else
+	{
+		SET_TASK_EVT(SYS_TASK_EVT_COLLAPSE); //启动崩塌计任务
+	}
 }
 
 /* 电池电量任务停止事件 */

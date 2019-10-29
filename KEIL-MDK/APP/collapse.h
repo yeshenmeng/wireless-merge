@@ -6,7 +6,7 @@
 
 #define COLLAPSE_FIFO_IN_PERIOD				500				//持续触发时向FIFO写入数据的周期
 
-#define BMA456_USE_FIFO						0 				//0：禁用FIFO功能，1：使用FIFO功能
+#define BMA456_USE_FIFO						1 				//0：禁用FIFO功能，1：使用FIFO功能
 #define BMA456_WTM_SIZE						1000			//设置FIFO水印大小，实际设置值比此值小20字节
 
 #if (SYS_HW_VERSION == SYS_HW_VERSION_V0_1_0)

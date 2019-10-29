@@ -36,6 +36,7 @@ typedef struct {
 	void (*standby_power_add)(void);
 	void (*ble_power_add)(void);
 	uint8_t (*get_update_flag)(void);
+	uint8_t (*get_gas_gauge)(void);
 }sw_bat_soc_mod_t;
 
 sw_bat_soc_mod_t* sw_bat_soc_init(void);

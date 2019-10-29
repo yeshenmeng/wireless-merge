@@ -16,6 +16,8 @@
 #define CMD_CONNECT_RESP				0x00000002
 #define CMD_PUBLISH						0x00000003
 #define CMD_PUBLISH_RESP				0x00000004
+#define CMD_TEST						0x00000005
+#define CMD_TEST_RESP					0x00000006
 
 #define DATA_LEN_BYTE_ID 				4
 

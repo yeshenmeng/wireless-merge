@@ -501,6 +501,31 @@
               <FileType>1</FileType>
               <FilePath>.\FUNC\easy_fifo.c</FilePath>
             </File>
+            <File>
+              <FileName>filter_average.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\filter_average.c</FilePath>
+            </File>
+            <File>
+              <FileName>filter_butterworth.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\filter_butterworth.c</FilePath>
+            </File>
+            <File>
+              <FileName>data_sort.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\data_sort.c</FilePath>
+            </File>
+            <File>
+              <FileName>hw_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\hw_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>lora_lost_rate_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\lora_lost_rate_test.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -530,6 +555,11 @@
               <FileName>ble_param_cfg_svc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\BLE\ble_param_cfg_svc.c</FilePath>
+            </File>
+            <File>
+              <FileName>ble_misc_svc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BLE\ble_misc_svc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1524,6 +1554,31 @@
               <FileType>1</FileType>
               <FilePath>.\FUNC\easy_fifo.c</FilePath>
             </File>
+            <File>
+              <FileName>filter_average.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\filter_average.c</FilePath>
+            </File>
+            <File>
+              <FileName>filter_butterworth.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\filter_butterworth.c</FilePath>
+            </File>
+            <File>
+              <FileName>data_sort.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\data_sort.c</FilePath>
+            </File>
+            <File>
+              <FileName>hw_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\hw_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>lora_lost_rate_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\FUNC\lora_lost_rate_test.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1553,6 +1608,11 @@
               <FileName>ble_param_cfg_svc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\BLE\ble_param_cfg_svc.c</FilePath>
+            </File>
+            <File>
+              <FileName>ble_misc_svc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BLE\ble_misc_svc.c</FilePath>
             </File>
           </Files>
         </Group>

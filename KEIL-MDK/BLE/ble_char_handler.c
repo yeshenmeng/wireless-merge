@@ -6,6 +6,7 @@
 #include "iot_operate.h"
 #include "calendar.h"
 #include "wireless_comm_services.h"
+#include "lora_lost_rate_test.h"
 #include "string.h"
 
 
@@ -30,6 +31,12 @@
 #define DEV_LONG_ADDR_WRITE				0x02
 #define DEV_SHORT_ADDR_WRITE			0x04
 #define DEV_TIME_STAMP_READ				0x08
+
+#define MISC_PAYLOAD_LEGNTH_WRITE		0x01
+#define MISC_COUNTING_MODE_WRITE		0x02
+#define MISC_TIMER_TIME_WRITE			0x04
+#define MISC_COMM_INTERVAL_WRITE		0x08
+#define MISC_COMM_CTRL_WEITE			0x10
 
 #define VERIFY_DATA(data, range, len)       			\
 do                                                      \
@@ -63,6 +70,7 @@ typedef struct {
 static uint32_t ble_param_req = 0;
 static uint32_t lora_param_req = 0;
 static uint32_t dev_param_req = 0;
+static uint32_t misc_param_req = 0;
 
 static range_t ble_tx_power_range = {
 	.lower = 0,
@@ -70,13 +78,13 @@ static range_t ble_tx_power_range = {
 };
 
 static range_t ble_adv_interval_range = {
-	.lower = 0,
-	.upper = 65535,
+	.lower = 20,
+	.upper = 10240,
 };
 
 static range_t ble_adv_time_range = {
-	.lower = 20,
-	.upper = 10240,
+	.lower = 0,
+	.upper = 65535,
 };
 
 static range_t ble_min_conn_interval_range = {
@@ -286,6 +294,36 @@ void ble_dev_time_stamp_read_handler(uint8_t* p_data, uint16_t* len)
 	memcpy(p_data, (uint8_t*)&time_stamp, *len);
 }
 
+void ble_payload_length_write_handler(uint8_t* p_data, uint16_t len){
+	misc_param_req |= MISC_PAYLOAD_LEGNTH_WRITE;
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	llrt_param_set((uint8_t*)&llrt_mod->payload_len, p_data, len);
+}
+
+void ble_counting_mode_write_handler(uint8_t* p_data, uint16_t len){
+	misc_param_req |= MISC_COUNTING_MODE_WRITE;
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	llrt_param_set((uint8_t*)&llrt_mod->counting_nums, p_data, len);
+}
+
+void ble_timer_mode_write_handler(uint8_t* p_data, uint16_t len){
+	misc_param_req |= MISC_TIMER_TIME_WRITE;
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	llrt_param_set((uint8_t*)&llrt_mod->timer_time, p_data, len);
+}
+
+void ble_comm_interval_write_handler(uint8_t* p_data, uint16_t len){
+	misc_param_req |= MISC_COMM_INTERVAL_WRITE;
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	llrt_param_set((uint8_t*)&llrt_mod->comm_interval, p_data, len);
+}
+
+void ble_comm_ctrl_write_handler(uint8_t* p_data, uint16_t len){
+	misc_param_req |= MISC_COMM_CTRL_WEITE;
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	llrt_param_set((uint8_t*)&llrt_mod->comm_ctrl, p_data, len);
+}
+	
 static void ble_cfg_char_change_handler(void)
 {
 	if(ble_param_req == 0)
@@ -310,14 +348,16 @@ static void ble_cfg_char_change_handler(void)
 
 	if(ble_param_req & BLE_MIN_CONN_INTERVAL_WRITE ||
 	   ble_param_req & BLE_MAX_CONN_INTERVAL_WRITE ||
-	   ble_param_req & BLE_SLAVE_LATENCY_WRITE ||
-	   ble_param_req & BLE_CONN_TIMEOUT_WRITE)
+	   ble_param_req & BLE_SLAVE_LATENCY_WRITE)
 	{
 		ble_param_req &= ~BLE_MIN_CONN_INTERVAL_WRITE;
 		ble_param_req &= ~BLE_MAX_CONN_INTERVAL_WRITE;
 		ble_param_req &= ~BLE_SLAVE_LATENCY_WRITE;
+	}
+	
+	if(ble_param_req & BLE_CONN_TIMEOUT_WRITE)
+	{
 		ble_param_req &= ~BLE_CONN_TIMEOUT_WRITE;
-		
 		sys_param_t* param = sys_param_get_handle();
 		ble_conn_params_change(param->ble_min_conn_interval,
 							   param->ble_max_conn_interval,
@@ -326,7 +366,7 @@ static void ble_cfg_char_change_handler(void)
 		
 		swt_mod_t* timer = swt_get_handle();
 		timer->ble_adv_led->stop();
-		timer->ble_adv_led->start((param->ble_min_conn_interval+param->ble_max_conn_interval)/2);
+		timer->ble_adv_led->start(param->ble_max_conn_interval);
 	}
 }
 
@@ -370,30 +410,7 @@ static void lora_cfg_char_change_handler(void)
 	if(lora_param_req & LORA_CRC_WRITE)
 	{
 		lora_param_req &= ~LORA_CRC_WRITE;
-	}		
-//	
-//	if(lora_param_req & LORA_POWER_WRITE)
-//	{
-//		lora_param_req &= ~LORA_POWER_WRITE;
-//	}
-
-//	if(lora_param_req & LORA_BW_WRITE ||
-//	   lora_param_req & LORA_SF_WRITE ||
-//	   lora_param_req & LORA_CODE_RATE_WRITE)
-//	{
-//		lora_param_req &= ~LORA_BW_WRITE;
-//		lora_param_req &= ~LORA_SF_WRITE;
-//		lora_param_req &= ~LORA_CODE_RATE_WRITE;
-//	}
-
-//	if(lora_param_req & LORA_PREAMBLE_WRITE ||
-//	   lora_param_req & LORA_HEADER_WRITE ||
-//	   lora_param_req & LORA_CRC_WRITE)
-//	{
-//		lora_param_req &= ~LORA_PREAMBLE_WRITE;
-//		lora_param_req &= ~LORA_HEADER_WRITE;
-//		lora_param_req &= ~LORA_CRC_WRITE;
-//	}
+	}
 }
 
 static void dev_cfg_char_change_handler(void)
@@ -433,11 +450,62 @@ static void dev_cfg_char_change_handler(void)
 	}
 }
 
+static void misc_svc_char_change_handler(void)
+{
+	if(misc_param_req & MISC_PAYLOAD_LEGNTH_WRITE ||
+	   misc_param_req & MISC_COUNTING_MODE_WRITE ||
+	   misc_param_req & MISC_TIMER_TIME_WRITE ||
+	   misc_param_req & MISC_COMM_INTERVAL_WRITE)
+	{
+		misc_param_req &= ~MISC_PAYLOAD_LEGNTH_WRITE;
+		misc_param_req &= ~MISC_COUNTING_MODE_WRITE;
+		misc_param_req &= ~MISC_TIMER_TIME_WRITE;
+		misc_param_req &= ~MISC_COMM_INTERVAL_WRITE;
+	}
+	
+	if(misc_param_req & MISC_COMM_CTRL_WEITE)
+	{
+		misc_param_req &= ~MISC_COMM_CTRL_WEITE;
+		llrt_mod_t* llrt_mod = llrt_get_handle();
+		if(llrt_mod->comm_ctrl == LLRT_CTRL_START || llrt_mod->comm_ctrl == LLRT_CTRL_START_RETRANSMISSION)
+		{
+			if(llrt_mod->counting_nums == 0 && llrt_mod->timer_time == 0)
+			{
+				llrt_mod->comm_ctrl = LLRT_CTRL_NULL;
+				llrt_mod->dev_comm_ctrl = LLRT_CTRL_NULL;
+				ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
+				ble_char_update_handle->misc_comm_ctrl_notify(llrt_mod->dev_comm_ctrl);
+				ble_char_update_handle->misc_lost_rate_notify(0);
+				ble_char_update_handle->misc_test_progress_notify(0);
+			}
+			else if(llrt_mod->dev_comm_ctrl == LLRT_CTRL_START || llrt_mod->dev_comm_ctrl == LLRT_CTRL_START_RETRANSMISSION)
+			{
+				llrt_mod->comm_ctrl = llrt_mod->dev_comm_ctrl;
+				ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
+				ble_char_update_handle->misc_comm_ctrl_notify(llrt_mod->dev_comm_ctrl);
+			}
+			else if(llrt_status_get() == LLRT_STOP)
+			{
+				llrt_status_set(LLRT_ACTIVE);
+				llrt_mod->dev_comm_ctrl = llrt_mod->comm_ctrl;
+				ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
+				ble_char_update_handle->misc_lost_rate_notify(0);
+				ble_char_update_handle->misc_test_progress_notify(0);
+			}
+		}
+		else if(llrt_mod->comm_ctrl == LLRT_CTRL_STOP)
+		{
+			llrt_stop();
+		}
+	}
+}
+
 void ble_char_req_handler(void)
 {
 	ble_cfg_char_change_handler();
 	lora_cfg_char_change_handler();
 	dev_cfg_char_change_handler();
+	misc_svc_char_change_handler();
 }
 
 

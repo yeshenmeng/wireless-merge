@@ -61,8 +61,9 @@ static void _setSensorHandler(iot_object_t *obj)
 static uint8_t _isCmdValid()
 {
 	uint32_t cmd = self._rx_buf[0]<<24| self._rx_buf[1] << 16 | self._rx_buf[2] << 8 |self._rx_buf[3];
-	return (cmd == CMD_CONNECT_RESP)
-			|| (cmd == CMD_PUBLISH_RESP);
+	return (cmd == CMD_CONNECT_RESP) || 
+		   (cmd == CMD_PUBLISH_RESP) ||
+		   (cmd == CMD_TEST_RESP);
 }
 
 /*******************************************************************************
@@ -337,6 +338,34 @@ static uint8_t _parseMasterMsg(void)
 				return 0;
 			}
 		}
+		else if(cmd == CMD_TEST_RESP)
+		{
+			if(self._sensor->isLongAddrEq(&self._rx_buf[DATA_LEN_BYTE_ID+1]) == 0)
+			{
+				_clearFlags();
+				return 0;
+			}
+			
+			for(int i=0; i<8; i++)
+			{
+				gateway_addr[i] = self._rx_buf[DATA_LEN_BYTE_ID+i+9];
+			}
+			
+			if(isGatewayAddrEq() == 0)
+			{
+				_clearFlags();
+				return 0;
+			}
+			
+			uint8_t payload_length = self._rx_buf[DATA_LEN_BYTE_ID] - 16;
+			for(int i=0; i<payload_length; i++)
+			{
+				if(self._rx_buf[DATA_LEN_BYTE_ID+i+17] != 0XA5)
+				{
+					return 0;
+				}
+			}
+		}
 
 		//clear the flags and buffers
 		_clearFlags();
@@ -356,7 +385,7 @@ static void _wirelessRxCpltCallBack(uint8_t* pData, uint16_t size)
 		for(int i=0; i<size; i++)
 		{
 			self._rx_buf[i] = pData[i];
-		}			
+		}
 	}
 	
 	self._frame_finish_flag = 1;

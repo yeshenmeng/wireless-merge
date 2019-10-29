@@ -8,6 +8,8 @@
 #include "easy_fifo.h"
 #include "sys_param.h"
 #include "light.h"
+#include "filter_average.h"
+#include "data_sort.h"
 
 
 #define ANY_MOTION_INT_PIN		COLLAPSE_INT1_PIN
@@ -43,6 +45,16 @@ static uint8_t wait_trigger_flag = 0;
 static collapse_state_t collapse_state;
 static collapse_obj_t collapse_obj;
 
+/* 过滤器参数设置 */
+#define FILTER_DATA_BUF_SIZE	40
+static sens_angle_t sens_angle[FILTER_DATA_BUF_SIZE];
+static const float filter_ratio_x = 0.4;
+static const float filter_ratio_y = 0.6;
+static const float filter_ratio_z = 0.4;
+static const float filter_delta_x = 0.06;
+static const float filter_delta_y = 0.07;
+static const float filter_delta_z = 0.06;
+static uint8_t filter_nums = 4;
 
 static void collapse_sw_spi_cfg(void)
 {
@@ -186,18 +198,15 @@ static uint16_t collapse_config_accelerometer(void)
 {
 	uint16_t ret = BMA4_OK;
 
-	/* Enable the accelerometer */
-	bma4_set_accel_enable(1, &bma456_dev);
-	nrf_delay_ms(1);
-
 	/* Declare an accelerometer configuration structure */
 	/* Assign the desired settings */
 	accel_conf.perf_mode = 0;
 	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_6_25HZ;
+//	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_400HZ;
 	accel_conf.range = BMA4_ACCEL_RANGE_2G;
 	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
 	ret |= bma4_set_accel_config(&accel_conf, &bma456_dev);
-	nrf_delay_ms(1000);
+	nrf_delay_ms(1);
 	
 #if (BMA456_USE_FIFO == 1)	
 	ret |= bma4_set_fifo_self_wakeup(BMA4_ENABLE, &bma456_dev);
@@ -206,6 +215,10 @@ static uint16_t collapse_config_accelerometer(void)
 	
 	ret |= bma4_set_advance_power_save(BMA4_ENABLE, &bma456_dev);
 	nrf_delay_ms(1);
+	
+	/* Enable the accelerometer */
+	bma4_set_accel_enable(1, &bma456_dev);
+	nrf_delay_ms(1);	
 	
 	return ret;
 }
@@ -539,6 +552,154 @@ void swt_collapse_fifo_in_cb(void)
 	collapse_sw_spi_cfg_low_power();
 }
 
+static uint16_t collapse_set_high_odr(uint8_t odr)
+{
+	uint16_t ret = bma4_set_accel_enable(0, &bma456_dev);
+	nrf_delay_ms(1);
+	accel_conf.perf_mode = 1;
+	accel_conf.odr = odr;
+	accel_conf.range = BMA4_ACCEL_RANGE_2G;
+	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
+	ret |= bma4_set_accel_config(&accel_conf, &bma456_dev);
+	nrf_delay_ms(1);
+	ret |= bma4_set_accel_enable(1, &bma456_dev);
+	nrf_delay_ms(1);
+	return ret;
+}
+
+static uint16_t collapse_set_low_odr(uint8_t odr)
+{
+	uint16_t ret = bma4_set_accel_enable(0, &bma456_dev);
+	nrf_delay_ms(1);
+	accel_conf.perf_mode = 0;
+	accel_conf.odr = odr;
+	accel_conf.range = BMA4_ACCEL_RANGE_2G;
+	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
+	ret |= bma4_set_accel_config(&accel_conf, &bma456_dev);
+	nrf_delay_ms(1);
+	ret |= bma4_set_advance_power_save(BMA4_ENABLE, &bma456_dev);
+	nrf_delay_ms(1);
+	ret |= bma4_set_accel_enable(1, &bma456_dev);
+	nrf_delay_ms(1);
+	return ret;
+}
+
+void bma456_da_convert(void)
+{
+	/* Get LSB per bit given the range and resolution */
+	float lsb_per_mg = pow(2, accel_conf.range+2) / pow(2, bma456_dev.resolution) * 1000;
+	uint16_t max_accel_value = pow(2, bma456_dev.resolution) / pow(2, accel_conf.range+1);
+	bma4_data.x = (bma4_data.x > max_accel_value) ? (max_accel_value) : (bma4_data.x);
+	bma4_data.y = (bma4_data.y > max_accel_value) ? (max_accel_value) : (bma4_data.y);
+	bma4_data.z = (bma4_data.z > max_accel_value) ? (max_accel_value) : (bma4_data.z);
+	
+	sens_data.accel.x_accel = lsb_per_mg * bma4_data.x;
+	sens_data.accel.y_accel = lsb_per_mg * bma4_data.y;
+	sens_data.accel.z_accel = lsb_per_mg * bma4_data.z;
+	bma456_x_accel_to_angle_convert();
+	bma456_y_accel_to_angle_convert();
+	bma456_z_accel_to_angle_convert();
+}
+
+static float convert_to_float(void* value) {
+	return *(float *)(value);
+}
+
+static void collapse_period_data_filter(void)
+{
+//	collapse_sw_spi_cfg();
+	LIGHT_3_ON();
+	sens_data.temp_c = collapse_read_temperature();
+	collapse_set_high_odr(BMA4_OUTPUT_DATA_RATE_200HZ);
+	memset(&bma4_data, 0X00, sizeof(bma4_data));
+	do
+	{
+		bma4_read_accel_xyz(&bma4_data, &bma456_dev);
+	}while(bma4_data.x==0 || bma4_data.y==0 || bma4_data.z==0);
+	nrf_delay_ms(10);
+	
+	uint8_t delay_ms = 1000 / 200 + 1;
+	for(int i = 0; i < FILTER_DATA_BUF_SIZE; i++)
+	{
+		bma4_read_accel_xyz(&bma4_data, &bma456_dev);
+		bma456_da_convert();
+		
+		if(i > 0)
+		{
+			sens_angle[i].x_angle = sens_data.angle.x_angle * filter_ratio_x + (1 - filter_ratio_x) * sens_angle[i-1].x_angle;
+			sens_angle[i].y_angle = sens_data.angle.y_angle * filter_ratio_y + (1 - filter_ratio_y) * sens_angle[i-1].y_angle;
+			sens_angle[i].z_angle = sens_data.angle.z_angle * filter_ratio_z + (1 - filter_ratio_z) * sens_angle[i-1].z_angle;
+		}
+		else
+		{
+			sens_angle[i].x_angle = sens_data.angle.x_angle;
+			sens_angle[i].y_angle = sens_data.angle.y_angle;
+			sens_angle[i].z_angle = sens_data.angle.z_angle;
+		}
+		
+		nrf_delay_ms(delay_ms);
+	}
+	
+	collapse_set_low_odr(BMA4_OUTPUT_DATA_RATE_6_25HZ);
+	LIGHT_3_OFF();
+	collapse_sw_spi_cfg_low_power();
+	
+	float data_buf[FILTER_DATA_BUF_SIZE];
+	for(int i = 0; i < FILTER_DATA_BUF_SIZE; i++)
+	{
+		data_buf[i] = sens_angle[i].x_angle;
+	}
+	data_sort(data_buf, FILTER_DATA_BUF_SIZE, 4, 0);
+	uint8_t filter_nums_tmp = filter_nums;
+	for(int i = filter_nums/2; i < FILTER_DATA_BUF_SIZE/2; i++)
+	{
+		if(data_buf[FILTER_DATA_BUF_SIZE-i]-data_buf[i] > filter_delta_x)
+		{
+			filter_nums_tmp += 2;
+		}
+	}
+	(filter_nums_tmp >= FILTER_DATA_BUF_SIZE) ? (filter_nums_tmp=FILTER_DATA_BUF_SIZE-6) : (1);
+	sens_data.angle.x_angle = filter_average(&data_buf[filter_nums_tmp/2], FILTER_DATA_BUF_SIZE-filter_nums_tmp, 4, convert_to_float);
+	
+	for(int i = 0; i < FILTER_DATA_BUF_SIZE; i++)
+	{
+		data_buf[i] = sens_angle[i].y_angle;
+	}
+	data_sort(data_buf, FILTER_DATA_BUF_SIZE, 4, 0);
+	filter_nums_tmp = filter_nums;
+	for(int i = filter_nums/2; i < FILTER_DATA_BUF_SIZE/2; i++)
+	{
+		if(data_buf[FILTER_DATA_BUF_SIZE-i]-data_buf[i] > filter_delta_y)
+		{
+			filter_nums_tmp += 2;
+		}
+	}
+	(filter_nums_tmp >= FILTER_DATA_BUF_SIZE) ? (filter_nums_tmp=FILTER_DATA_BUF_SIZE-6) : (1);
+	sens_data.angle.y_angle = filter_average(&data_buf[filter_nums_tmp/2], FILTER_DATA_BUF_SIZE-filter_nums_tmp, 4, convert_to_float);
+	
+	for(int i = 0; i < FILTER_DATA_BUF_SIZE; i++)
+	{
+		data_buf[i] = sens_angle[i].z_angle;
+	}
+	data_sort(data_buf, FILTER_DATA_BUF_SIZE, 4, 0);
+	filter_nums_tmp = filter_nums;
+	for(int i = filter_nums/2; i < FILTER_DATA_BUF_SIZE/2; i++)
+	{
+		if(data_buf[FILTER_DATA_BUF_SIZE-i]-data_buf[i] > filter_delta_z)
+		{
+			filter_nums_tmp += 2;
+		}
+	}
+	(filter_nums_tmp >= FILTER_DATA_BUF_SIZE) ? (filter_nums_tmp=FILTER_DATA_BUF_SIZE-6) : (1);
+	sens_data.angle.z_angle = filter_average(&data_buf[filter_nums_tmp/2], FILTER_DATA_BUF_SIZE-filter_nums_tmp, 4, convert_to_float);
+	easy_fifo_write((uint8_t*)&sens_data, sizeof(sens_data));
+//	printf("%f,%f,%f,",sens_data.angle.x_angle,sens_data.angle.y_angle,sens_data.angle.z_angle);
+//	bma4_read_accel_xyz(&bma4_data, &bma456_dev);
+//	bma456_d_a_convert();
+//	printf("%f,%f,%f\n",sens_data.angle.x_angle,sens_data.angle.y_angle,sens_data.angle.z_angle);
+//	nrf_delay_ms(2000);
+}
+
 static void collapse_operate(void)
 {
 	bma456_evt_handler();
@@ -557,13 +718,7 @@ static void collapse_operate(void)
 		collapse_obj.lpm_obj->task_set_stat(COLLAPSE_TASK_ID, LPM_TASK_STA_RUN);
 		if(collapse_obj.mode == PERIOD_MODE)
 		{
-//			collapse_sw_spi_cfg();
-			LIGHT_3_ON();
-			sens_data.temp_c = collapse_read_temperature();
-			bma4_read_accel_xyz(&bma4_data, &bma456_dev);
-			bma456_d_a_convert();
-			LIGHT_3_OFF();
-			collapse_sw_spi_cfg_low_power();
+			collapse_period_data_filter();
 		}
 		
 		sens_data_t sens_data_tmp;

@@ -4,7 +4,7 @@
 #include "nrf_drv_timer.h"
 
 
-static const nrf_drv_timer_t m_timer = NRF_DRV_TIMER_INSTANCE(0);
+static const nrf_drv_timer_t m_timer = NRF_DRV_TIMER_INSTANCE(1);
 static nrf_saadc_value_t m_buffer_pool[2][SAADC_SAMPLE_IN_BUFFER]; //Ë«»º³å
 static nrf_ppi_channel_t m_ppi_channel;
 static uint8_t m_saadc_is_enable = 0;

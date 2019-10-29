@@ -16,7 +16,9 @@
 #include "ble_dev_cfg_svc.h"
 #include "ble_lora_cfg_svc.h"
 #include "ble_param_cfg_svc.h"
+#include "ble_misc_svc.h"
 #include "sys_param.h"
+#include "lora_lost_rate_test.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -35,13 +37,14 @@
 #define SLAVE_LATENCY                   0                                       /**< Slave latency. */
 #define CONN_SUP_TIMEOUT(x)             MSEC_TO_UNITS(x, UNIT_10_MS)         	/**< Connection supervisory time-out (4 seconds). */
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(20000)                  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (15 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(5000)                   /**< Time between each call to sd_ble_gap_conn_param_update after the first call (5 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(2000)                  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (15 seconds). */
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(500)                   /**< Time between each call to sd_ble_gap_conn_param_update after the first call (5 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
 BLE_DEV_CFG_DEF(m_dev_cfg);                                                     /**< LED Button Service instance. */
 BLE_LORA_CFG_DEF(m_lora_cfg);                                                     /**< LED Button Service instance. */
 BLE_PARAM_CFG_DEF(m_ble_cfg);                                                     /**< LED Button Service instance. */
+BLE_MISC_DEF(m_misc_svc);
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 
@@ -523,6 +526,153 @@ static void ble_dev_characteristic_hw_version_update(uint8_t* value)
 	APP_ERROR_CHECK(err_code);
 }
 
+static void ble_misc_payload_length_update(uint8_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 1,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.payload_length_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
+static void ble_misc_counting_mode_update(uint32_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 4,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.counting_mode_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
+static void ble_misc_timer_mode_update(uint32_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 4,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.timer_mode_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
+static void ble_misc_comm_interval_update(uint32_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 4,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.comm_interval_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
+static void ble_misc_comm_ctrl_notify(uint8_t value)
+{
+	if(m_conn_handle != BLE_CONN_HANDLE_INVALID)
+	{
+		uint16_t len = sizeof(value);
+		uint16_t hvx_len = len;
+		ble_gatts_hvx_params_t hvx_params;
+		
+		memset(&hvx_params, 0, sizeof(hvx_params));
+		hvx_params.handle = m_misc_svc.comm_ctrl_char_handles.value_handle;
+        hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+        hvx_params.offset = 0;
+        hvx_params.p_len  = &hvx_len;
+        hvx_params.p_data = (uint8_t*)&value;
+		
+        uint32_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+        if ((err_code == NRF_SUCCESS) && (hvx_len != len))
+        {
+            err_code = NRF_ERROR_DATA_SIZE;
+        }
+		
+		if ((err_code != NRF_SUCCESS) &&
+			(err_code != NRF_ERROR_INVALID_STATE) &&
+			(err_code != NRF_ERROR_RESOURCES) &&
+			(err_code != NRF_ERROR_BUSY) &&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+		   )
+		{
+			APP_ERROR_CHECK(err_code);
+		}
+	}
+}
+
+static void ble_misc_lost_rate_notify(float value)
+{
+	if(m_conn_handle != BLE_CONN_HANDLE_INVALID)
+	{
+		uint16_t len = sizeof(value);
+		uint16_t hvx_len = len;
+		ble_gatts_hvx_params_t hvx_params;
+		
+		memset(&hvx_params, 0, sizeof(hvx_params));
+		hvx_params.handle = m_misc_svc.lost_rate_char_handles.value_handle;
+        hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+        hvx_params.offset = 0;
+        hvx_params.p_len  = &hvx_len;
+        hvx_params.p_data = (uint8_t*)&value;
+		
+        uint32_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+        if ((err_code == NRF_SUCCESS) && (hvx_len != len))
+        {
+            err_code = NRF_ERROR_DATA_SIZE;
+        }
+		
+		if ((err_code != NRF_SUCCESS) &&
+			(err_code != NRF_ERROR_INVALID_STATE) &&
+			(err_code != NRF_ERROR_RESOURCES) &&
+			(err_code != NRF_ERROR_BUSY) &&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+		   )
+		{
+			APP_ERROR_CHECK(err_code);
+		}
+	}
+}
+
+static void ble_misc_test_progress_notify(float value)
+{
+	if(m_conn_handle != BLE_CONN_HANDLE_INVALID)
+	{
+		uint16_t len = sizeof(value);
+		uint16_t hvx_len = len;
+		ble_gatts_hvx_params_t hvx_params;
+		
+		memset(&hvx_params, 0, sizeof(hvx_params));
+		hvx_params.handle = m_misc_svc.test_progress_char_handles.value_handle;
+        hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+        hvx_params.offset = 0;
+        hvx_params.p_len  = &hvx_len;
+        hvx_params.p_data = (uint8_t*)&value;
+		
+        uint32_t err_code = sd_ble_gatts_hvx(m_conn_handle, &hvx_params);
+        if ((err_code == NRF_SUCCESS) && (hvx_len != len))
+        {
+            err_code = NRF_ERROR_DATA_SIZE;
+        }
+		
+		if ((err_code != NRF_SUCCESS) &&
+			(err_code != NRF_ERROR_INVALID_STATE) &&
+			(err_code != NRF_ERROR_RESOURCES) &&
+			(err_code != NRF_ERROR_BUSY) &&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+		   )
+		{
+			APP_ERROR_CHECK(err_code);
+		}
+	}
+}
+
 static ble_char_update_t ble_char_update = {
 	.ble_tx_power_update = ble_param_characteristic_tx_power_update,
 	.ble_adv_interval_update = ble_param_characteristic_adv_interval_update,
@@ -563,6 +713,14 @@ static ble_char_update_t ble_char_update = {
 	.dev_lora_rssi_update = ble_dev_characteristic_lora_rssi_update,
 	.dev_sw_version_update = ble_dev_characteristic_sw_version_update,
 	.dev_hw_version_update = ble_dev_characteristic_hw_version_update,
+	
+	.misc_payload_length = ble_misc_payload_length_update,
+	.misc_counting_mode = ble_misc_counting_mode_update,
+	.misc_timer_mode = ble_misc_timer_mode_update,
+	.misc_comm_interval = ble_misc_comm_interval_update,
+	.misc_comm_ctrl_notify = ble_misc_comm_ctrl_notify,
+	.misc_lost_rate_notify = ble_misc_lost_rate_notify,
+	.misc_test_progress_notify = ble_misc_test_progress_notify,
 };
 
 void ble_adv_start(void)
@@ -615,17 +773,21 @@ void ble_conn_params_change(uint16_t min_interva,
 							uint16_t slave_latency, 
 							uint16_t conn_timeout)
 {
-	ble_gap_conn_params_t params;
-	params.min_conn_interval = MIN_CONN_INTERVAL(min_interva);
-	params.max_conn_interval = MAX_CONN_INTERVAL(max_interval);
-	params.slave_latency = slave_latency;
-	params.conn_sup_timeout = CONN_SUP_TIMEOUT(conn_timeout);
-	ret_code_t err_code = ble_conn_params_change_conn_params(m_conn_handle, &params);
-	if(err_code != 0)
-	{
-		err_code = 0;
-	}
-//	APP_ERROR_CHECK(err_code);
+	ret_code_t             err_code;
+	ble_gap_conn_params_t  gap_conn_params;
+	
+	memset(&gap_conn_params, 0, sizeof(gap_conn_params));
+	gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL(min_interva);
+	gap_conn_params.max_conn_interval = MAX_CONN_INTERVAL(max_interval);
+	gap_conn_params.slave_latency     = slave_latency; //从机延迟
+	gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT(conn_timeout); //监督超时
+
+	/* GAP服务特征：外围设备首选连接参数设置 */
+	err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
+	APP_ERROR_CHECK(err_code);
+	
+	err_code |= ble_conn_params_change_conn_params(m_conn_handle, &gap_conn_params);
+	APP_ERROR_CHECK(err_code);
 }
 
 /**@brief Function for the GAP initialization.
@@ -641,17 +803,24 @@ static void gap_params_init(void)
 
 	/* GAP服务特征：设备名字设置 */
 	/* 设置GAP的安全模式，即设备名称特征的写权限 */
+#if (DEV_MAME_FORMAT == 0)
+	sys_param_t* param = sys_param_get_handle();
+	char dev_name[sizeof(param->dev_long_addr)*2+1];
+	for(int i = 0; i < sizeof(param->dev_long_addr); i++)
+	{
+		char name_tmp[2];
+		sprintf(name_tmp, "%02X", param->dev_long_addr[i]);
+		memcpy(&dev_name[i*2],name_tmp,strlen(name_tmp));
+	}
+	dev_name[sizeof(param->dev_long_addr)*2] = '\0';
+#elif (DEV_MAME_FORMAT == 1)
 	char dev_name[20];
 	sys_param_t* param = sys_param_get_handle();
 	uint16_t dev_name_suffix = ((uint16_t)param->dev_long_addr[6] << 8) | param->dev_long_addr[7];
-	char dev_type[2];
-	dev_type[0] = 'I';
-	dev_type[1] = '_';
-	if(param->object_version == COLLAPSE_VERSION)
-	{
-		dev_type[0] = 'C';
-	}
+	char dev_type[2] = {'0', '_'};
+	(param->object_version == INCLINOMETER_VERSION) ? (dev_type[0] = 'I') : (dev_type[0] = 'C');
 	sprintf(dev_name, "%s%s%d", SYS_PARAM_BLE_DEV_NAME_PREFIX, dev_type, dev_name_suffix);
+#endif
 	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 	err_code = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)dev_name, strlen(dev_name));
 	APP_ERROR_CHECK(err_code);
@@ -857,17 +1026,17 @@ static void conn_params_init(void)
 
 	memset(&cp_init, 0, sizeof(cp_init));
 	
-	cp_init.p_conn_params                  = NULL; //设置为NULL，从主机获取连接参数
-	cp_init.first_conn_params_update_delay = FIRST_CONN_PARAMS_UPDATE_DELAY; //连接或启动通知到首次发起连接参数更新请求之间的时间(ticks)
-	cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY; //每次调用sd_ble_gap_conn_param_update()函数发起连接参数更新请求之间的间隔时间(ticks)
-	cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT; //放弃连接参数协商前尝试连接参数协商的最大次数
-	/* 设置连接参数更新从通知使能或者连接事件开始计时
-		 如果从通知使能开始计时，设置为对应CCCD（客户端特性配置描述符）句柄
-		 如果从连接事件开始计时，设置为BLE_GATT_HANDLE_INVALID */
+	cp_init.p_conn_params                  = NULL;								//设置为NULL，从主机获取连接参数
+	cp_init.first_conn_params_update_delay = FIRST_CONN_PARAMS_UPDATE_DELAY;	//初始化事件（连接或者启动通知）到第一次连接参数更新的时间
+	cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY;		//每次调用sd_ble_gap_conn_param_update()函数发起连接参数更新请求之间的间隔时间(ticks)
+	cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT;		//放弃连接协商参数前尝试的最大次数
+	
+	/* 如果是通知开始时启动这个过程，设置为对应的CCCD句柄，
+	   如果是从连接开始启动这个过程，则设置为BLE_GATT_HANDLE_INVALID */
 	cp_init.start_on_notify_cccd_handle    = BLE_GATT_HANDLE_INVALID;
-	cp_init.disconnect_on_fail             = false; //连接参数更新失败不断开连接
-	cp_init.evt_handler                    = on_conn_params_evt; //注册连接参数更新事件句柄
-	cp_init.error_handler                  = conn_params_error_handler; //注册连接参数更新错误事件句柄
+	cp_init.disconnect_on_fail             = false;								//连接参数更新失败不断开连接
+	cp_init.evt_handler                    = on_conn_params_evt;				//注册连接参数更新事件句柄
+	cp_init.error_handler                  = conn_params_error_handler;			//注册连接参数更新错误事件句柄
 
 	/* 调用库函数（以连接参数更新初始化结构体为输入参数）初始化连接参数协商模块 */
 	err_code = ble_conn_params_init(&cp_init);
@@ -1010,6 +1179,12 @@ __weak void ble_dev_long_addr_write_handler(uint8_t* p_data, uint16_t len){}
 __weak void ble_dev_short_addr_write_handler(uint8_t* p_data, uint16_t len){}
 __weak void ble_dev_time_stamp_read_handler(uint8_t* p_data, uint16_t* len){}
 	
+__weak void ble_payload_length_write_handler(uint8_t* p_data, uint16_t len){}
+__weak void ble_counting_mode_write_handler(uint8_t* p_data, uint16_t len){}
+__weak void ble_timer_mode_write_handler(uint8_t* p_data, uint16_t len){}
+__weak void ble_comm_interval_write_handler(uint8_t* p_data, uint16_t len){}
+__weak void ble_comm_ctrl_write_handler(uint8_t* p_data, uint16_t len){}
+	
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
@@ -1054,6 +1229,16 @@ static void services_init(void)
 		.dev_time_stamp_read_handler			= ble_dev_time_stamp_read_handler,
 	};
 	err_code = ble_dev_cfg_init(&m_dev_cfg, &init);
+	APP_ERROR_CHECK(err_code);
+	
+	ble_misc_init_t misc_init = {
+		.payload_length_write_handler 			= ble_payload_length_write_handler,
+		.counting_mode_write_handler 			= ble_counting_mode_write_handler,
+		.timer_mode_write_handler 				= ble_timer_mode_write_handler,
+		.comm_interval_write_handler 			= ble_comm_interval_write_handler,
+		.comm_ctrl_write_handler 				= ble_comm_ctrl_write_handler,
+	};
+	err_code = ble_misc_init(&m_misc_svc, &misc_init);
 	APP_ERROR_CHECK(err_code);
 }
 
@@ -1126,6 +1311,55 @@ void ble_softdev_init(void)
 		ble_char_update.dev_accel_slope_threshold_update(param->iot_collapse.iot_accel_slope_threshold);
 		ble_char_update.dev_consecutive_data_points_update(param->iot_collapse.iot_consecutive_data_points);
 	}
+	
+	llrt_mod_t* llrt_mod = llrt_get_handle();
+	ble_char_update.misc_payload_length(llrt_mod->payload_len);
+	ble_char_update.misc_counting_mode(llrt_mod->counting_nums);
+	ble_char_update.misc_timer_mode(llrt_mod->timer_time);
+	ble_char_update.misc_comm_interval(llrt_mod->comm_interval);
 }
+
+//uint8_t init_value = 0;
+//#include "nrf_error.h"
+//void ble_misc_comm_ctrl_notify_enable(void)
+//{
+//	if(m_conn_handle != BLE_CONN_HANDLE_INVALID && init_value == 0)
+//	{
+//		init_value = 1;
+//		uint16_t value = 1;
+//		ret_code_t err_code;
+//		ble_gatts_value_t ble_gatts_value = {
+//			.len = 2,
+//			.offset = 0,
+//			.p_value = (uint8_t*)&value,
+//		};
+//		err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.comm_ctrl_char_handles.cccd_handle, &ble_gatts_value);
+//		APP_ERROR_CHECK(err_code);
+//	}
+//}
+
+//#include "calendar.h"
+//float test_value = 0;
+//uint32_t start_time = 0;
+//void ble_misc_test_progress_notify_test(void)
+//{
+//	if(m_conn_handle != BLE_CONN_HANDLE_INVALID)
+//	{
+//		calendar_mod_t* calendar = calendar_get_handle();
+//		if(calendar->get_run_time() - start_time >= 1)
+//		{
+//			start_time = calendar->get_run_time();
+//		}
+//		else
+//		{
+//			return;
+//		}
+//		
+//		uint32_t* value = (uint32_t*)&test_value;
+//		(*value)++;
+//		ble_char_update.misc_test_progress_notify(test_value);
+//	}
+//}
+
 
 

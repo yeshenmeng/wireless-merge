@@ -7,7 +7,7 @@ static sys_param_t sys_param;
 
 void sys_param_init(void)
 {
-	flash_read(SYS_PARAM_FLASH_PAGE_ADDR, (uint8_t *)&sys_param, sizeof(sys_param));
+//	flash_read(SYS_PARAM_FLASH_PAGE_ADDR, (uint8_t *)&sys_param, sizeof(sys_param));
 	
 	if(sys_param.object_version != INCLINOMETER_VERSION &&
 	   sys_param.object_version != COLLAPSE_VERSION)
@@ -56,9 +56,9 @@ void sys_param_init(void)
 		sys_param.update_flag = 0;
 		sys_param.object_version = sys_param.dev_long_addr[0];
 		
-		flash_write(SYS_PARAM_FLASH_PAGE_ADDR,
-				   (uint32_t*)&sys_param,
-				    sizeof(sys_param)%4==0?sizeof(sys_param)/4:(sizeof(sys_param)/4+1));
+//		flash_write(SYS_PARAM_FLASH_PAGE_ADDR,
+//				   (uint32_t*)&sys_param,
+//				    sizeof(sys_param)%4==0?sizeof(sys_param)/4:(sizeof(sys_param)/4+1));
 	}
 	
 	sys_param.update_flag = 0;
@@ -70,9 +70,9 @@ uint8_t sys_save_param_to_flash(void)
 	if(sys_param.update_flag == 1)
 	{
 		sys_param.update_flag = 0;
-		return flash_write(SYS_PARAM_FLASH_PAGE_ADDR,
-						  (uint32_t*)&sys_param,
-						   sizeof(sys_param)%4==0?sizeof(sys_param)/4:(sizeof(sys_param)/4+1));
+//		return flash_write(SYS_PARAM_FLASH_PAGE_ADDR,
+//						  (uint32_t*)&sys_param,
+//						   sizeof(sys_param)%4==0?sizeof(sys_param)/4:(sizeof(sys_param)/4+1));
 	}
 	
 	return 0;

@@ -7,6 +7,9 @@
 #define COMM_TRANSMISSION_FORMAT					1 			//0：低字节先传，1：高字节先传
 #define CRC_TRANSMISSION_FORMAT						0 			//0：低字节先传，1：高字节先传
 
+/* 设备名字格式 */
+#define DEV_MAME_FORMAT								0			//0：使用测点长地址作为设备名字，1：使用自定义规则作为设备名字
+
 /* 系统参数存储区 */
 #define SYS_PARAM_FLASH_PAGE_ADDR					ADDR_FLASH_PAGE_80 	//系统参数存储地址
 
@@ -15,13 +18,13 @@
 #define SYS_PARAM_BLE_TX_POWER						6 			//蓝牙发射功率[0:-40dBm,1:-20dBm,2:-16dBm,3:-12dBm,4:-8dBm,5:-4dBm,6:0dBm,7:+3dBm,8:+4dBm]
 #define SYS_PARAM_BLE_ADV_INTERVAL					100 		//蓝牙广播间隔[20~10240ms]
 #define SYS_PARAM_BLE_ADV_TIME						15 			//蓝牙广播时间[1~65535s,0:无限广播]
-#define SYS_PARAM_BLE_MIN_CONN_INTERVAL				900 		//蓝牙连接最小间隔[15~4000ms]
-#define SYS_PARAM_BLE_MAX_CONN_INTERVAL				1100 		//蓝牙连接最大间隔[15~4000ms]
+#define SYS_PARAM_BLE_MIN_CONN_INTERVAL				15 			//蓝牙连接最小间隔[15~4000ms]
+#define SYS_PARAM_BLE_MAX_CONN_INTERVAL				200 		//蓝牙连接最大间隔[15~4000ms]
 #define SYS_PARAM_BLE_SLAVE_LATENCY					0 			//蓝牙从机可以忽略的事件数[0~499]
 #define SYS_PARAM_BLE_CONN_TIMEOUT					4000 		//蓝牙连接超时时间，超时时间设置应大于从机延时*连接最大间隔[100~32000ms]
 
 /* LORA配置参数 */
-#define SYS_PARAM_LORA_FREQ							470 		//LORA频率[410~800MHz]
+#define SYS_PARAM_LORA_FREQ							433 		//LORA频率[410~800MHz]
 #define SYS_PARAM_LORA_POWER						(int8_t)20 	//LORA发射功率[-9~22]
 #define SYS_PARAM_LORA_BW							8 			/* LORA带宽[0:7.81KHz ,1:10.24KHz,2:15.63KHz,3:20.83KHz,
 																	4:31.25KHz,5:41.67KHz,6:62.50KHz,7:125KHz,8:250KHz,9:500KHz] */
@@ -33,19 +36,19 @@
 
 /* 设备配置参数 */
 #define SYS_PARAM_DEV_GATEWAY_ADDR					{0x64,0x01,0X20,0X19,0X09,0X16,0X00,0X01} 	//网关地址
-#define SYS_PARAM_DEV_LONG_ADDR						{0XC9,0X01,0X20,0X19,0X08,0X12,0X00,0X02} 	//测点长地址
+#define SYS_PARAM_DEV_LONG_ADDR						{0XC8,0X01,0X20,0X19,0X08,0X12,0X00,0X02} 	//测点长地址
 #define SYS_PARAM_DEV_SHORT_ADDR					{0x01,0x01} 								//测点短地址
 
 /* IOT倾角配置参数 */
 #define SYS_PARAM_IOT_I_MODE						0 			//数据采样模式[0:周期模式,1:相对阈值模式,2:绝对阈值模式]
-#define SYS_PARAM_IOT_I_SAMPLE_INTERVAL				8 			//3600 //数据采样间隔，单位s
+#define SYS_PARAM_IOT_I_SAMPLE_INTERVAL				600 			//3600 //数据采样间隔，单位s
 #define SYS_PARAM_IOT_I_X_ANGLE_THRESHOLD			(float)80.1	//阈值模式下的X轴角度阈值
 #define SYS_PARAM_IOT_I_Y_ANGLE_THRESHOLD			(float)80.2	//阈值模式下的Y轴角度阈值
 #define SYS_PARAM_IOT_I_Z_ANGLE_THRESHOLD			(float)80.3	//阈值模式下的Y轴角度阈值
 	
 /* IOT崩塌计配置参数 */
 #define SYS_PARAM_IOT_C_MODE						0			//0：周期模式，1：触发模式
-#define SYS_PARAM_IOT_C_SAMPLE_PERIOD				10 			//3600//周期模式下的采样频率，单位s
+#define SYS_PARAM_IOT_C_SAMPLE_PERIOD				20 			//3600//周期模式下的采样频率，单位s
 #define SYS_PARAM_IOT_C_TRIGGER_PERIOD				2 			//触发模式下持续触发时的数据推送频率，单位s
 #define SYS_PARAM_IOT_C_ACCEL_SLOPE_THRESHOLD		100 		//触发模式下的加速度变化的斜率阈值
 #define SYS_PARAM_IOT_C_CONSECUTIVE_DATA_POINTS		2 			//触发模式下连续数据点
@@ -63,7 +66,7 @@
 /* 软件/硬件信号检测功能开关 */
 #define SIGNAL_DET_SW								0 			//软件信号检测开关
 #define SIGNAL_DET_HW								1 			//硬件信号检测开关
-#define BAT_SOC_DET_SW								0 			//软件电池电量检测开关
+#define BAT_SOC_DET_SW								1			//软件电池电量检测开关
 #define BAT_SOC_DET_HW								0 			//硬件电池电量检测开关 
 
 /* 软件信号检测任务参数 */

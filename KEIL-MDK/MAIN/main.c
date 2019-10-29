@@ -34,6 +34,7 @@
 #include "ble_char_handler.h"
 #include "sw_bat_soc.h"
 #include "collapse.h"
+#include "lora_lost_rate_test.h"
 
 
 #define DEAD_BEEF	0xDEADBEEF	/**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
@@ -193,6 +194,7 @@ int main(void)
 	swt_init(); 											//软件定时器初始化
 	calendar_init(); 										//日历功能初始化初始化
 	rng_lpm_init(); 										//低功耗随机数发生器初始化
+	llrt_init();
 #if (BAT_SOC_DET_SW == 1)
 	sw_bat_soc_init();										//软件电池电量检测初始化
 #endif

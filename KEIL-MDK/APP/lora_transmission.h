@@ -9,6 +9,7 @@
 #define LORA_OUT_STATE_DISCON					0X02 //从连接态断开
 #define LORA_OUT_STATE_LINK						0X03 //从未连接到连接态
 #define LORA_OUT_STATE_CONNECT					0X04 //连接态
+#define LORA_OUT_STATE_TEST						0X05 //通信测试态
 
 #if (SYS_HW_VERSION == SYS_HW_VERSION_V0_1_0)
 /* LORA模块引脚配置 */
