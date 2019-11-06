@@ -13,14 +13,15 @@
 #define IOT_I_SAMPLE_MODE_ID					3
 #define IOT_I_SAMPLE_INTERVAL_ID				4
 #define IOT_I_TIME_STAMP_ID						5
-#define IOT_I_BATTERY_LEVEL_ID					6
-#define IOT_I_TEMPERATURE_ID					7
-#define IOT_I_DATA_X_ANGLE_ID 					8
-#define IOT_I_DATA_Y_ANGLE_ID 					9
-#define IOT_I_DATA_Z_ANGLE_ID 					10
-#define IOT_I_DATA_X_THRESHOLD_ID 				11
-#define IOT_I_DATA_Y_THRESHOLD_ID 				12
-#define IOT_I_DATA_Z_THRESHOLD_ID 				13
+#define IOT_I_TIME_OFFSET_ID					6
+#define IOT_I_BATTERY_LEVEL_ID					7
+#define IOT_I_TEMPERATURE_ID					8
+#define IOT_I_DATA_X_ANGLE_ID 					9
+#define IOT_I_DATA_Y_ANGLE_ID 					10
+#define IOT_I_DATA_Z_ANGLE_ID 					11
+#define IOT_I_DATA_X_THRESHOLD_ID 				12
+#define IOT_I_DATA_Y_THRESHOLD_ID 				13
+#define IOT_I_DATA_Z_THRESHOLD_ID 				14
 
 /* 崩塌计IOT协议属性 */
 #define IOT_C_LONG_ADDR_ID						1
@@ -28,17 +29,18 @@
 #define IOT_C_SAMPLE_MODE_ID					3
 #define IOT_C_SAMPLE_INTERVAL_ID				4
 #define IOT_C_TIME_STAMP_ID						5
-#define IOT_C_ACCEL_SLOPE_THRESHOLD_ID 			6
-#define IOT_C_CONSECUTIVE_DATA_POINTS_ID		7
-#define IOT_C_BATTERY_LEVEL_ID					8
-#define IOT_C_TEMPERATURE_ID					9
-#define IOT_C_DATA_X_ACCEL_ID 					10
-#define IOT_C_DATA_Y_ACCEL_ID 					11
-#define IOT_C_DATA_Z_ACCEL_ID 					12
+#define IOT_C_TIME_OFFSET_ID					6
+#define IOT_C_ACCEL_SLOPE_THRESHOLD_ID 			7
+#define IOT_C_CONSECUTIVE_DATA_POINTS_ID		8
+#define IOT_C_BATTERY_LEVEL_ID					9
+#define IOT_C_TEMPERATURE_ID					10
+#define IOT_C_DATA_X_ACCEL_ID 					11
+#define IOT_C_DATA_Y_ACCEL_ID 					12
+#define IOT_C_DATA_Z_ACCEL_ID 					13
 #if (IOT_PROTOCOL_C_WITH_ANGLE == 1)
-#define IOT_C_DATA_X_ANGLE_ID 					13
-#define IOT_C_DATA_Y_ANGLE_ID 					14
-#define IOT_C_DATA_Z_ANGLE_ID 					15
+#define IOT_C_DATA_X_ANGLE_ID 					14
+#define IOT_C_DATA_Y_ANGLE_ID 					15
+#define IOT_C_DATA_Z_ANGLE_ID 					16
 #endif
 
 typedef struct {

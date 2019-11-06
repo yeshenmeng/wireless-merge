@@ -89,6 +89,22 @@ static void iot_write_time_stamp(uint32_t value)
 	}
 }
 
+/* 向IoT对象BUF中写入时间偏移 */
+static void iot_write_time_offset(uint16_t value)
+{
+	sys_param_t* param = sys_param_get_handle();
+	if(param->object_version == INCLINOMETER_VERSION)
+	{
+		IoT_dev.sensor->writePropFromBuf(IOT_I_TIME_OFFSET_ID, (uint8_t *)&value);
+		IoT_dev.sensor->resetPropChangeFlag(IOT_I_TIME_OFFSET_ID);
+	}
+	else if(param->object_version == COLLAPSE_VERSION)
+	{
+		IoT_dev.sensor->writePropFromBuf(IOT_C_TIME_OFFSET_ID, (uint8_t *)&value);
+		IoT_dev.sensor->resetPropChangeFlag(IOT_C_TIME_OFFSET_ID);
+	}
+}
+
 /* 向IoT对象BUF中写入加速度变化的斜率阈值数据 */
 static void iot_write_accel_slope_threshold(uint16_t value)
 {
@@ -253,7 +269,7 @@ static void iot_set_long_addr(uint8_t* value)
 		param->object_version = param->dev_long_addr[0];
 		param->update_flag = 1;
 		param->save_param_to_flash();
-		APP_ERROR_CHECK(1);
+		sys_reset();
 	}
 }
 
@@ -326,6 +342,24 @@ static void iot_set_time_stamp(uint32_t value)
 {
 	calendar_mod_t* calendar = calendar_get_handle();
 	calendar->set_time_stamp(value);
+}
+
+/* 保存IoT协议设置的时间偏移 */
+static void iot_set_time_offset(uint16_t value)
+{
+	sys_param_t* param = sys_param_get_handle();
+	if(param->object_version == INCLINOMETER_VERSION)
+	{
+		sys_param_set((uint8_t*)&param->iot_clinometer.time_offset, (uint8_t*)&value, sizeof(value));
+	}
+	else if(param->object_version == COLLAPSE_VERSION)
+	{
+		if(value != param->iot_collapse.iot_mode)
+		{
+			sys_param_set((uint8_t*)&param->iot_collapse.time_offset, (uint8_t*)&value, sizeof(value));
+			IoT_dev.collapse_obj->iot_set_mode();
+		}
+	}
 }
 
 /* 保存IoT协议设置的加速度变化的斜率阈值 */
@@ -418,6 +452,20 @@ static void iot_i_operate(void)
 		iot_set_time_stamp(value);
 		ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
 		ble_char_update_handle->dev_time_stamp_update(value);
+	}
+	
+	/* 处理IoT协议设置的时间偏移时更新数据到蓝牙协议中 */
+	if(IoT_dev.sensor->isPropChanged(IOT_I_TIME_OFFSET_ID))
+	{
+		uint16_t value;
+		IoT_dev.sensor->readPropToBuf(IOT_I_TIME_OFFSET_ID, (uint8_t *)&value);
+		IoT_dev.sensor->resetPropChangeFlag(IOT_I_TIME_OFFSET_ID);
+#if COMM_TRANSMISSION_FORMAT == 1
+		swap_reverse((uint8_t*)&value, sizeof(value));
+#endif
+		iot_set_time_offset(value);
+		ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
+		ble_char_update_handle->dev_time_offset_update(value);
 	}
 	
 	/* 处理IoT协议设置的倾角X轴阈值同时更新数据到蓝牙协议中 */
@@ -541,6 +589,20 @@ static void iot_c_operate(void)
 		iot_set_time_stamp(value);
 		ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
 		ble_char_update_handle->dev_time_stamp_update(value);
+	}
+	
+	/* 处理IoT协议设置的时间偏移时更新数据到蓝牙协议中 */
+	if(IoT_dev.sensor->isPropChanged(IOT_C_TIME_OFFSET_ID))
+	{
+		uint16_t value;
+		IoT_dev.sensor->readPropToBuf(IOT_C_TIME_OFFSET_ID, (uint8_t *)&value);
+		IoT_dev.sensor->resetPropChangeFlag(IOT_C_TIME_OFFSET_ID);
+#if COMM_TRANSMISSION_FORMAT == 1
+		swap_reverse((uint8_t*)&value, sizeof(value));
+#endif
+		iot_set_time_offset(value);
+		ble_char_update_t* ble_char_update_handle = ble_char_update_handle_get();
+		ble_char_update_handle->dev_time_offset_update(value);
 	}
 	
 	/* 处理IoT协议设置的加速度变化的斜率阈值同时更新数据到蓝牙协议中 */
@@ -693,6 +755,7 @@ iot_dev_t * iot_init(iot_object_t *sensor, collapse_obj_t *collapse_obj, lora_ob
 		iot_write_sample_mode(param->iot_clinometer.iot_mode);
 		iot_write_sample_interval(param->iot_clinometer.iot_sample_interval);	
 		iot_write_time_stamp(0);
+		iot_write_time_offset(param->iot_clinometer.time_offset);
 		iot_write_battery_level(IoT_dev.gas_gauge);
 		iot_write_temp(25);
 		iot_write_x_angle(0);
@@ -709,6 +772,7 @@ iot_dev_t * iot_init(iot_object_t *sensor, collapse_obj_t *collapse_obj, lora_ob
 		iot_write_sample_mode(param->iot_collapse.iot_mode);
 		iot_write_sample_interval(param->iot_collapse.iot_period);	
 		iot_write_time_stamp(0);
+		iot_write_time_offset(param->iot_collapse.time_offset);
 		iot_write_accel_slope_threshold(param->iot_collapse.iot_accel_slope_threshold);
 		iot_write_consecutive_data_points(param->iot_collapse.iot_consecutive_data_points);
 		iot_write_battery_level(IoT_dev.gas_gauge);

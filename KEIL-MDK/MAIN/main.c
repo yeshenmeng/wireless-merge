@@ -47,7 +47,6 @@ inclinometer_obj_t* m_inclinometer;
 collapse_obj_t* m_collapse;
 sw_signal_detect_obj_t*  m_sw_signal_detect;
 wireless_comm_services_t* wireless_comm_svc;
-uint32_t sys_run_cnt = 0;
 
 /**@brief Function for assert macro callback.
  *
@@ -91,10 +90,11 @@ void iot_set_prop(iot_object_t *sensor)
 	sys_param_t* param = sys_param_get_handle();
 	if(param->object_version == INCLINOMETER_VERSION)
 	{
-		sensor->setPropCount(14);
+		sensor->setPropCount(15);
 		sensor->setPropLen(IOT_I_SAMPLE_MODE_ID, 1);
 		sensor->setPropLen(IOT_I_SAMPLE_INTERVAL_ID, 4);
 		sensor->setPropLen(IOT_I_TIME_STAMP_ID, 4);
+		sensor->setPropLen(IOT_I_TIME_OFFSET_ID, 2);
 		sensor->setPropLen(IOT_I_BATTERY_LEVEL_ID, 1);
 		sensor->setPropLen(IOT_I_TEMPERATURE_ID, 4);
 		sensor->setPropLen(IOT_I_DATA_X_ANGLE_ID, 4);
@@ -107,14 +107,15 @@ void iot_set_prop(iot_object_t *sensor)
 	else if(param->object_version == COLLAPSE_VERSION)
 	{
 #if (IOT_PROTOCOL_C_WITH_ANGLE == 0)
-		sensor->setPropCount(13);
+		sensor->setPropCount(14);
 #elif (IOT_PROTOCOL_C_WITH_ANGLE == 1)
-		sensor->setPropCount(16);
+		sensor->setPropCount(17);
 #endif
 	
 		sensor->setPropLen(IOT_C_SAMPLE_MODE_ID, 1);
 		sensor->setPropLen(IOT_C_SAMPLE_INTERVAL_ID, 4);
 		sensor->setPropLen(IOT_C_TIME_STAMP_ID, 4);
+		sensor->setPropLen(IOT_C_TIME_OFFSET_ID, 2);
 		sensor->setPropLen(IOT_C_ACCEL_SLOPE_THRESHOLD_ID, 2);
 		sensor->setPropLen(IOT_C_CONSECUTIVE_DATA_POINTS_ID, 2);
 		sensor->setPropLen(IOT_C_BATTERY_LEVEL_ID, 1);
@@ -225,14 +226,14 @@ int main(void)
 	LIGHT_OFF();
 	
 //	uart_init();
-
+	
 	while(1)
 	{
 		/* 系统任务调度 */
 		sys_task_schd();
 		
 		/* 低功耗管理任务运行 */
-		m_lpm->task_operate(lpm_enter_handler, lpm_exit_handler);
+//		m_lpm->task_operate(lpm_enter_handler, lpm_exit_handler);
 		
 		/* BLE任务运行 */
 		m_ble->task_operate();
@@ -264,12 +265,10 @@ int main(void)
 		
 		/* 蓝牙数据协议处理 */
 		ble_char_req_handler();
-
-		sys_run_cnt++;		
+	
 //		uart_run();
 	}
 }
-
 
 /**
  * @}

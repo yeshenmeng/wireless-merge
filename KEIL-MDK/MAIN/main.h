@@ -49,7 +49,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 /* 当前硬件版本 */
-#define SYS_HW_VERSION						SYS_HW_VERSION_V0_1_1
+#define SYS_HW_VERSION						SYS_HW_VERSION_V0_1_0
 
 /* 支持的硬件版本 */
 #define SYS_HW_VERSION_V0_1_0				1
@@ -59,29 +59,21 @@ extern "C" {
 #define INCLINOMETER_VERSION				200 	//倾角版本
 #define COLLAPSE_VERSION					201 	//崩塌计版本
 
-#if (SYS_HW_VERSION == SYS_HW_VERSION_V0_1_0)
 /* 软件版本 */
 #define SYS_SW_MAIN_VERSION					0X00 	//软件主版本号
 #define SYS_SW_SUB_VERSION					0X01 	//软件子版本号
 #define SYS_SW_MODIFY_VERSION				0X0001 	//软件修改版本号
 
 /* 硬件版本 */
+#if (SYS_HW_VERSION == SYS_HW_VERSION_V0_1_0)
 #define SYS_HW_MAIN_VERSION					0X00 	//硬件主版本号
 #define SYS_HW_SUB_VERSION					0X01 	//硬件子版本号
 #define SYS_HW_MODIFY_VERSION				0X0000 	//硬件修改版本号
 #elif (SYS_HW_VERSION == SYS_HW_VERSION_V0_1_1)
-#define SYS_SW_MAIN_VERSION					0X00
-#define SYS_SW_SUB_VERSION					0X02
-#define SYS_SW_MODIFY_VERSION				0X0001
-
 #define SYS_HW_MAIN_VERSION					0X00
 #define SYS_HW_SUB_VERSION					0X01
 #define SYS_HW_MODIFY_VERSION				0X0001
 #else
-#define SYS_SW_MAIN_VERSION					0X00
-#define SYS_SW_SUB_VERSION					0X00
-#define SYS_SW_MODIFY_VERSION				0X0000
-
 #define SYS_HW_MAIN_VERSION					0X00
 #define SYS_HW_SUB_VERSION					0X00
 #define SYS_HW_MODIFY_VERSION				0X0000
@@ -115,8 +107,9 @@ typedef enum
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
-#define ADDR_FLASH_PAGE_0     ((uint32_t)0x00000000) /* Base @ of Page 0, 4 Kbytes */
-#define ADDR_FLASH_PAGE_1     ((uint32_t)0x00001000) /* Base @ of Page 1, 4 Kbytes */
+#ifndef SOFTDEVICE_PRESENT
+#define ADDR_FLASH_PAGE_0     ((uint32_t)0x00000000) /* Base @ of Page 0, 4 Kbytes */ //master boot record(MBR)
+#define ADDR_FLASH_PAGE_1     ((uint32_t)0x00001000) /* Base @ of Page 1, 4 Kbytes */ //software device stack start
 #define ADDR_FLASH_PAGE_2     ((uint32_t)0x00002000) /* Base @ of Page 2, 4 Kbytes */
 #define ADDR_FLASH_PAGE_3     ((uint32_t)0x00003000) /* Base @ of Page 3, 4 Kbytes */
 #define ADDR_FLASH_PAGE_4     ((uint32_t)0x00004000) /* Base @ of Page 4, 4 Kbytes */
@@ -152,8 +145,10 @@ typedef enum
 #define ADDR_FLASH_PAGE_34    ((uint32_t)0x00022000) /* Base @ of Page 34, 4 Kbytes */
 #define ADDR_FLASH_PAGE_35    ((uint32_t)0x00023000) /* Base @ of Page 35, 4 Kbytes */
 #define ADDR_FLASH_PAGE_36    ((uint32_t)0x00024000) /* Base @ of Page 36, 4 Kbytes */
-#define ADDR_FLASH_PAGE_37    ((uint32_t)0x00025000) /* Base @ of Page 37, 4 Kbytes */
-#define ADDR_FLASH_PAGE_38    ((uint32_t)0x00026000) /* Base @ of Page 38, 4 Kbytes */
+#define ADDR_FLASH_PAGE_37    ((uint32_t)0x00025000) /* Base @ of Page 37, 4 Kbytes */ //software device stack end
+#endif
+
+#define ADDR_FLASH_PAGE_38    ((uint32_t)0x00026000) /* Base @ of Page 38, 4 Kbytes */ //APP start
 #define ADDR_FLASH_PAGE_39    ((uint32_t)0x00027000) /* Base @ of Page 39, 4 Kbytes */
 #define ADDR_FLASH_PAGE_40    ((uint32_t)0x00028000) /* Base @ of Page 40, 4 Kbytes */
 #define ADDR_FLASH_PAGE_41    ((uint32_t)0x00029000) /* Base @ of Page 41, 4 Kbytes */
@@ -187,9 +182,9 @@ typedef enum
 #define ADDR_FLASH_PAGE_69    ((uint32_t)0x00045000) /* Base @ of Page 69, 4 Kbytes */
 #define ADDR_FLASH_PAGE_70    ((uint32_t)0x00046000) /* Base @ of Page 70, 4 Kbytes */
 #define ADDR_FLASH_PAGE_71    ((uint32_t)0x00047000) /* Base @ of Page 71, 4 Kbytes */
-#define ADDR_FLASH_PAGE_72    ((uint32_t)0x00048000) /* Base @ of Page 72, 4 Kbytes */
-#define ADDR_FLASH_PAGE_73    ((uint32_t)0x00049000) /* Base @ of Page 73, 4 Kbytes */
-#define ADDR_FLASH_PAGE_74    ((uint32_t)0x0004A000) /* Base @ of Page 74, 4 Kbytes */
+#define ADDR_FLASH_PAGE_72    ((uint32_t)0x00048000) /* Base @ of Page 72, 4 Kbytes */ //APP end
+#define ADDR_FLASH_PAGE_73    ((uint32_t)0x00049000) /* Base @ of Page 73, 4 Kbytes */ //APP data start(system param storage sector)
+#define ADDR_FLASH_PAGE_74    ((uint32_t)0x0004A000) /* Base @ of Page 74, 4 Kbytes */ //battery data storage sector
 #define ADDR_FLASH_PAGE_75    ((uint32_t)0x0004B000) /* Base @ of Page 75, 4 Kbytes */
 #define ADDR_FLASH_PAGE_76    ((uint32_t)0x0004C000) /* Base @ of Page 76, 4 Kbytes */
 #define ADDR_FLASH_PAGE_77    ((uint32_t)0x0004D000) /* Base @ of Page 77, 4 Kbytes */
@@ -197,8 +192,8 @@ typedef enum
 #define ADDR_FLASH_PAGE_79    ((uint32_t)0x0004F000) /* Base @ of Page 79, 4 Kbytes */
 #define ADDR_FLASH_PAGE_80    ((uint32_t)0x00050000) /* Base @ of Page 80, 4 Kbytes */
 #define ADDR_FLASH_PAGE_81    ((uint32_t)0x00051000) /* Base @ of Page 81, 4 Kbytes */
-#define ADDR_FLASH_PAGE_82    ((uint32_t)0x00052000) /* Base @ of Page 82, 4 Kbytes */
-#define ADDR_FLASH_PAGE_83    ((uint32_t)0x00053000) /* Base @ of Page 83, 4 Kbytes */
+#define ADDR_FLASH_PAGE_82    ((uint32_t)0x00052000) /* Base @ of Page 82, 4 Kbytes */ //APP data end
+#define ADDR_FLASH_PAGE_83    ((uint32_t)0x00053000) /* Base @ of Page 83, 4 Kbytes */ //APP update backup data start
 #define ADDR_FLASH_PAGE_84    ((uint32_t)0x00054000) /* Base @ of Page 84, 4 Kbytes */
 #define ADDR_FLASH_PAGE_85    ((uint32_t)0x00055000) /* Base @ of Page 85, 4 Kbytes */
 #define ADDR_FLASH_PAGE_86    ((uint32_t)0x00056000) /* Base @ of Page 86, 4 Kbytes */
@@ -206,8 +201,6 @@ typedef enum
 #define ADDR_FLASH_PAGE_88    ((uint32_t)0x00058000) /* Base @ of Page 88, 4 Kbytes */
 #define ADDR_FLASH_PAGE_89    ((uint32_t)0x00059000) /* Base @ of Page 89, 4 Kbytes */
 #define ADDR_FLASH_PAGE_90    ((uint32_t)0x0005A000) /* Base @ of Page 90, 4 Kbytes */
-
-#ifndef SOFTDEVICE_PRESENT
 #define ADDR_FLASH_PAGE_91    ((uint32_t)0x0005B000) /* Base @ of Page 91, 4 Kbytes */
 #define ADDR_FLASH_PAGE_92    ((uint32_t)0x0005C000) /* Base @ of Page 92, 4 Kbytes */
 #define ADDR_FLASH_PAGE_93    ((uint32_t)0x0005D000) /* Base @ of Page 93, 4 Kbytes */
@@ -234,17 +227,19 @@ typedef enum
 #define ADDR_FLASH_PAGE_114   ((uint32_t)0x00072000) /* Base @ of Page 114, 4 Kbytes */
 #define ADDR_FLASH_PAGE_115   ((uint32_t)0x00073000) /* Base @ of Page 115, 4 Kbytes */
 #define ADDR_FLASH_PAGE_116   ((uint32_t)0x00074000) /* Base @ of Page 116, 4 Kbytes */
-#define ADDR_FLASH_PAGE_117   ((uint32_t)0x00075000) /* Base @ of Page 117, 4 Kbytes */
-#define ADDR_FLASH_PAGE_118   ((uint32_t)0x00076000) /* Base @ of Page 118, 4 Kbytes */
+#define ADDR_FLASH_PAGE_117   ((uint32_t)0x00075000) /* Base @ of Page 117, 4 Kbytes */ //APP update backup data end
+
+#ifndef SOFTDEVICE_PRESENT
+#define ADDR_FLASH_PAGE_118   ((uint32_t)0x00076000) /* Base @ of Page 118, 4 Kbytes */	//udpate:boot sector start
 #define ADDR_FLASH_PAGE_119   ((uint32_t)0x00077000) /* Base @ of Page 119, 4 Kbytes */
 #define ADDR_FLASH_PAGE_120   ((uint32_t)0x00078000) /* Base @ of Page 120, 4 Kbytes */
 #define ADDR_FLASH_PAGE_121   ((uint32_t)0x00079000) /* Base @ of Page 121, 4 Kbytes */
 #define ADDR_FLASH_PAGE_122   ((uint32_t)0x0007A000) /* Base @ of Page 122, 4 Kbytes */
 #define ADDR_FLASH_PAGE_123   ((uint32_t)0x0007B000) /* Base @ of Page 123, 4 Kbytes */
 #define ADDR_FLASH_PAGE_124   ((uint32_t)0x0007C000) /* Base @ of Page 124, 4 Kbytes */
-#define ADDR_FLASH_PAGE_125   ((uint32_t)0x0007D000) /* Base @ of Page 125, 4 Kbytes */
-#define ADDR_FLASH_PAGE_126   ((uint32_t)0x0007E000) /* Base @ of Page 126, 4 Kbytes */
-#define ADDR_FLASH_PAGE_127   ((uint32_t)0x0007F000) /* Base @ of Page 127, 4 Kbytes */
+#define ADDR_FLASH_PAGE_125   ((uint32_t)0x0007D000) /* Base @ of Page 125, 4 Kbytes */ //udpate:boot sector end
+#define ADDR_FLASH_PAGE_126   ((uint32_t)0x0007E000) /* Base @ of Page 126, 4 Kbytes */	//udpate:MBR parameter storage sector
+#define ADDR_FLASH_PAGE_127   ((uint32_t)0x0007F000) /* Base @ of Page 127, 4 Kbytes */	//udpate:bootloader settings sector
 #endif
 
 /* USER CODE END Private defines */

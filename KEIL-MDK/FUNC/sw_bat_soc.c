@@ -6,10 +6,6 @@
 #include "math.h"
 
 
-const uint8_t lora_test_bw = 8;
-const uint8_t lora_test_sf = 7;
-const float lora_tx_fail_rx_power = 11.05118 - 2.159261; //lora发送失败后等待接收过程（3s的等待时间）的功耗uAh
-
 /**************************常量区**************************/
 const float lora_tx_fail_power_tb[] = { 			//LORA在不同功率下发送失败的功耗uAh
 	9.520373, /*-9*/  0, /*-8*/  0, /*-7*/  0, /*-6*/
@@ -38,6 +34,10 @@ const float ble_pre_power = 1805.716252;			//蓝牙单位时间功耗uA
 const float standby_per_power = 24.393651; 			//设备待机单位时间功耗uA
 const float sca_power = 0.414407; 					//采样任务一次耗电量uAh
 const float off_power = 0; 							//电池无法给设备供电时软件计算的最后一次剩余容量uAh
+
+const uint8_t lora_test_bw = 8;
+const uint8_t lora_test_sf = 7;
+const float lora_tx_fail_rx_power = 11.05118 - 2.159261; //lora发送失败后等待接收过程（3s的等待时间）的功耗uAh
 
 /**************************静态变量区**************************/
 static float lora_tx_fail_power;					//LORA发送失败一次消耗的电量，与发送功率有关
@@ -245,14 +245,14 @@ static uint8_t sw_bat_soc_get_gas_gauge(void)
 
 sw_bat_soc_mod_t* sw_bat_soc_init(void)
 {
-//	flash_read(SW_BAT_SOC_FLASH_PAGE_ADDR, (uint8_t *)&m_sw_bat_soc, sizeof(m_sw_bat_soc));
+	flash_read(SW_BAT_SOC_FLASH_PAGE_ADDR, (uint8_t *)&m_sw_bat_soc, sizeof(m_sw_bat_soc));
 	
-//	if(m_sw_bat_soc.data_save_flag == 0XFF)
+	if(m_sw_bat_soc.data_save_flag == 0XFF)
 	{
 		memset(&m_sw_bat_soc, 0X00, sizeof(m_sw_bat_soc));
-		m_sw_bat_soc.cap_percent = 100;
+		m_sw_bat_soc.cap_percent = 99;
 		m_sw_bat_soc.rest_cap = bat_cap;
-		m_sw_bat_soc.actual_cap = bat_cap;
+		m_sw_bat_soc.actual_cap = bat_cap - 1;
 	}
 	m_sw_bat_soc.data_save_flag = 0;
 	
@@ -284,9 +284,9 @@ uint8_t sw_bat_soc_param_to_flash(void)
 	if(m_sw_bat_soc.data_save_flag == 1)
 	{
 		m_sw_bat_soc.data_save_flag = 0;
-//		return flash_write(SW_BAT_SOC_FLASH_PAGE_ADDR,
-//						  (uint32_t*)&m_sw_bat_soc,
-//						   sizeof(m_sw_bat_soc)%4==0?sizeof(m_sw_bat_soc)/4:(sizeof(m_sw_bat_soc)/4+1));
+		return flash_write(SW_BAT_SOC_FLASH_PAGE_ADDR,
+						  (uint32_t*)&m_sw_bat_soc,
+						   sizeof(m_sw_bat_soc)%4==0?sizeof(m_sw_bat_soc)/4:(sizeof(m_sw_bat_soc)/4+1));
 	}
 	return 0;
 }

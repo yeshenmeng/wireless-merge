@@ -3,7 +3,7 @@
 #include "string.h"
 
 
-static sys_time m_sys_time = {0};
+static sys_time_t m_sys_time = {0};
 static const nrf_drv_timer_t m_timer = NRF_DRV_TIMER_INSTANCE(1);
 
 static void timer_handler(nrf_timer_event_t event_type, void * p_context)
@@ -56,7 +56,7 @@ void hw_timer_stop(void)
 	nrfx_timer_uninit(&m_timer);
 }
 
-sys_time* hw_timer_get_sys_time(void)
+sys_time_t* hw_timer_get_sys_time(void)
 {
 	return &m_sys_time;
 }

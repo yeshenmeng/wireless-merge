@@ -288,8 +288,17 @@ static uint32_t ble_dev_i_cfg_init(ble_dev_cfg_t * p_dev_cfg, const ble_dev_cfg_
 	
 	add_char_params.uuid = DEV_I_CFG_UUID_HW_VERSION_CHAR;
 	add_char_params.init_len = 4;
-	add_char_params.max_len = 4;		
-    return characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_hw_version_char_handles);	
+	add_char_params.max_len = 4;
+	err_code = characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_hw_version_char_handles);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+	
+	add_char_params.uuid = DEV_I_CFG_UUID_TIME_OFFSET_CHAR;
+	add_char_params.init_len = 2;
+	add_char_params.max_len = 2;
+    return characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_time_offset_char_handles);	
 }
 
 static uint32_t ble_dev_c_cfg_init(ble_dev_cfg_t * p_dev_cfg, const ble_dev_cfg_init_t * p_dev_cfg_init)
@@ -494,8 +503,17 @@ static uint32_t ble_dev_c_cfg_init(ble_dev_cfg_t * p_dev_cfg, const ble_dev_cfg_
 	
 	add_char_params.uuid = DEV_C_CFG_UUID_HW_VERSION_CHAR;
 	add_char_params.init_len = 4;
-	add_char_params.max_len = 4;		
-    return characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_hw_version_char_handles);	
+	add_char_params.max_len = 4;
+	err_code = characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_hw_version_char_handles);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+	
+	add_char_params.uuid = DEV_C_CFG_UUID_TIME_OFFSET_CHAR;
+	add_char_params.init_len = 2;
+	add_char_params.max_len = 2;
+    return characteristic_add(p_dev_cfg->service_handle, &add_char_params, &p_dev_cfg->dev_time_offset_char_handles);	
 }
 
 uint32_t ble_dev_cfg_init(ble_dev_cfg_t * p_dev_cfg, const ble_dev_cfg_init_t * p_dev_cfg_init)

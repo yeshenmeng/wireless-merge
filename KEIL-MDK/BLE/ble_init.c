@@ -12,7 +12,6 @@
 #include "nrf_ble_gatt.h"
 #include "nrf_ble_qwr.h"
 #include "app_timer.h"
-#include "light.h"
 #include "ble_dev_cfg_svc.h"
 #include "ble_lora_cfg_svc.h"
 #include "ble_param_cfg_svc.h"
@@ -330,6 +329,18 @@ static void ble_dev_characteristic_time_stamp_update(uint32_t value)
 		.p_value = (uint8_t*)&value,
 	};
 	err_code = sd_ble_gatts_value_set(m_conn_handle, m_dev_cfg.dev_time_stamp_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
+static void ble_dev_characteristic_time_offset_update(uint16_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 2,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_dev_cfg.dev_time_offset_char_handles.value_handle, &ble_gatts_value);
 	APP_ERROR_CHECK(err_code);
 }
 
@@ -673,6 +684,18 @@ static void ble_misc_test_progress_notify(float value)
 	}
 }
 
+static void ble_misc_ota_update(uint8_t value)
+{
+	ret_code_t err_code;
+	ble_gatts_value_t ble_gatts_value = {
+		.len = 1,
+		.offset = 0,
+		.p_value = (uint8_t*)&value,
+	};
+	err_code = sd_ble_gatts_value_set(m_conn_handle, m_misc_svc.ota_char_handles.value_handle, &ble_gatts_value);
+	APP_ERROR_CHECK(err_code);
+}
+
 static ble_char_update_t ble_char_update = {
 	.ble_tx_power_update = ble_param_characteristic_tx_power_update,
 	.ble_adv_interval_update = ble_param_characteristic_adv_interval_update,
@@ -713,6 +736,7 @@ static ble_char_update_t ble_char_update = {
 	.dev_lora_rssi_update = ble_dev_characteristic_lora_rssi_update,
 	.dev_sw_version_update = ble_dev_characteristic_sw_version_update,
 	.dev_hw_version_update = ble_dev_characteristic_hw_version_update,
+	.dev_time_offset_update = ble_dev_characteristic_time_offset_update,
 	
 	.misc_payload_length = ble_misc_payload_length_update,
 	.misc_counting_mode = ble_misc_counting_mode_update,
@@ -721,6 +745,7 @@ static ble_char_update_t ble_char_update = {
 	.misc_comm_ctrl_notify = ble_misc_comm_ctrl_notify,
 	.misc_lost_rate_notify = ble_misc_lost_rate_notify,
 	.misc_test_progress_notify = ble_misc_test_progress_notify,
+	.misc_ota = ble_misc_ota_update,
 };
 
 void ble_adv_start(void)
@@ -1184,6 +1209,7 @@ __weak void ble_counting_mode_write_handler(uint8_t* p_data, uint16_t len){}
 __weak void ble_timer_mode_write_handler(uint8_t* p_data, uint16_t len){}
 __weak void ble_comm_interval_write_handler(uint8_t* p_data, uint16_t len){}
 __weak void ble_comm_ctrl_write_handler(uint8_t* p_data, uint16_t len){}
+__weak void ble_ota_write_handler(uint8_t* p_data, uint16_t len){}
 	
 /**@brief Function for initializing services that will be used by the application.
  */
@@ -1237,6 +1263,7 @@ static void services_init(void)
 		.timer_mode_write_handler 				= ble_timer_mode_write_handler,
 		.comm_interval_write_handler 			= ble_comm_interval_write_handler,
 		.comm_ctrl_write_handler 				= ble_comm_ctrl_write_handler,
+		.comm_ota_write_handler                 = ble_ota_write_handler,
 	};
 	err_code = ble_misc_init(&m_misc_svc, &misc_init);
 	APP_ERROR_CHECK(err_code);
@@ -1300,6 +1327,7 @@ void ble_softdev_init(void)
 		ble_char_update.dev_x_angle_threshold_update(param->iot_clinometer.iot_x_angle_threshold);
 		ble_char_update.dev_y_angle_threshold_update(param->iot_clinometer.iot_y_angle_threshold);
 		ble_char_update.dev_z_angle_threshold_update(param->iot_clinometer.iot_z_angle_threshold);
+		ble_char_update.dev_time_offset_update(param->iot_clinometer.time_offset);
 	}
 	else if(param->object_version == COLLAPSE_VERSION)
 	{
@@ -1310,6 +1338,7 @@ void ble_softdev_init(void)
 		ble_char_update.dev_z_accel_update(0);
 		ble_char_update.dev_accel_slope_threshold_update(param->iot_collapse.iot_accel_slope_threshold);
 		ble_char_update.dev_consecutive_data_points_update(param->iot_collapse.iot_consecutive_data_points);
+		ble_char_update.dev_time_offset_update(param->iot_collapse.time_offset);
 	}
 	
 	llrt_mod_t* llrt_mod = llrt_get_handle();
@@ -1317,6 +1346,12 @@ void ble_softdev_init(void)
 	ble_char_update.misc_counting_mode(llrt_mod->counting_nums);
 	ble_char_update.misc_timer_mode(llrt_mod->timer_time);
 	ble_char_update.misc_comm_interval(llrt_mod->comm_interval);
+	ble_char_update.misc_ota(0);
+}
+
+uint16_t ble_conn_handle_get(void)
+{
+	return m_conn_handle;
 }
 
 //uint8_t init_value = 0;
@@ -1360,6 +1395,5 @@ void ble_softdev_init(void)
 //		ble_char_update.misc_test_progress_notify(test_value);
 //	}
 //}
-
 
 

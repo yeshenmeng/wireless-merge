@@ -6,7 +6,6 @@
 #define LORA_MIN_POWER_LEVEL		(int)-9
 #define LORA_MAX_POWER_LEVEL		(int)22
 #define IS_VALID_POWER_LEVEL(x)		((x>=LORA_MIN_POWER_LEVEL)&&(x<=LORA_MAX_POWER_LEVEL))
-#define SW_BAT_SOC_FLASH_PAGE_ADDR	ADDR_FLASH_PAGE_81 //电池数据存储区
 
 typedef struct {
 	uint8_t data_save_flag;

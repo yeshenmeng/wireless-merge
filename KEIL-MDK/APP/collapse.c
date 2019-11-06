@@ -225,16 +225,34 @@ static uint16_t collapse_config_accelerometer(void)
 
 static float collapse_read_temperature(void)
 {
-	/* Get temperature in degree C */
-	int32_t temp; 
-	bma4_get_temperature(&temp, BMA4_DEG, &bma456_dev);
+	uint8_t err_cnt = 5;
+	float temp = 0;
+	int32_t tmp; 
 	
-	if(((temp - 23) / BMA4_SCALE_TEMP) == 0x80) 
+	while(err_cnt--)
 	{
-		return 0;
+		/* Get temperature in degree C */
+		if(BMA4_OK != bma4_get_temperature(&tmp, BMA4_DEG, &bma456_dev))
+		{
+			continue;
+		}
+		
+		if(((tmp - 23) / BMA4_SCALE_TEMP) == 0x80) 
+		{
+			continue;
+		}
+		
+		temp = (float)tmp / (float)BMA4_SCALE_TEMP;
+		if(temp < -40 || temp > 85)
+		{
+			temp = 0;
+			continue;
+		}
+		
+		break;
 	}
 	
-	return (float)temp / (float)BMA4_SCALE_TEMP;
+	return temp;
 }
 
 #if (BMA456_USE_FIFO == 1)
@@ -515,7 +533,6 @@ static uint16_t collapse_config_feature(void)
 
 /* 崩塌计任务停止处理 */
 __weak void collapse_task_stop_handler(void* param){};
-
 static void collapse_task_start(void)
 {
 	if(collapse_obj.state == COLLAPSE_IDLE)

@@ -45,6 +45,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define DEV_I_CFG_UUID_LORA_RSSI_CHAR				(DEV_I_CFG_UUID_SERVICE+15)
 #define DEV_I_CFG_UUID_SW_VERSION_CHAR				(DEV_I_CFG_UUID_SERVICE+16)
 #define DEV_I_CFG_UUID_HW_VERSION_CHAR				(DEV_I_CFG_UUID_SERVICE+17)
+#define DEV_I_CFG_UUID_TIME_OFFSET_CHAR				(DEV_I_CFG_UUID_SERVICE+18)
 													 
 /* 崩塌计蓝牙设备配置服务与特征 */
 #define DEV_C_CFG_UUID_SERVICE						0x1580
@@ -67,7 +68,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define DEV_C_CFG_UUID_LORA_RSSI_CHAR				(DEV_C_CFG_UUID_SERVICE+17)
 #define DEV_C_CFG_UUID_SW_VERSION_CHAR				(DEV_C_CFG_UUID_SERVICE+18)
 #define DEV_C_CFG_UUID_HW_VERSION_CHAR				(DEV_C_CFG_UUID_SERVICE+19)
-
+#define DEV_C_CFG_UUID_TIME_OFFSET_CHAR				(DEV_C_CFG_UUID_SERVICE+20)
 
 // Forward declaration of the ble_dev_cfg_t type.
 typedef struct ble_dev_cfg_s ble_dev_cfg_t;
@@ -123,6 +124,7 @@ struct ble_dev_cfg_s
 	ble_gatts_char_handles_t	dev_lora_rssi_char_handles; 
     ble_gatts_char_handles_t    dev_sw_version_char_handles; 
     ble_gatts_char_handles_t    dev_hw_version_char_handles;
+	ble_gatts_char_handles_t	dev_time_offset_char_handles;
     uint8_t                     uuid_type;           /**< UUID type for the Service. */
 	ble_dev_cfg_gateway_write_handler_t dev_gateway_write_handler; /**< Event handler to be called when the Characteristic is written. */
 	ble_dev_cfg_long_addr_write_handler_t dev_long_addr_write_handler;

@@ -11,7 +11,8 @@
 #define DEV_MAME_FORMAT								0			//0：使用测点长地址作为设备名字，1：使用自定义规则作为设备名字
 
 /* 系统参数存储区 */
-#define SYS_PARAM_FLASH_PAGE_ADDR					ADDR_FLASH_PAGE_80 	//系统参数存储地址
+#define SYS_PARAM_FLASH_PAGE_ADDR					ADDR_FLASH_PAGE_73	//系统参数存储地址
+#define SW_BAT_SOC_FLASH_PAGE_ADDR					ADDR_FLASH_PAGE_74	//电池数据存储区
 
 /* 蓝牙配置参数 */
 #define SYS_PARAM_BLE_DEV_NAME_PREFIX				"TOE_MG_" 	//设备名字前缀
@@ -36,19 +37,19 @@
 
 /* 设备配置参数 */
 #define SYS_PARAM_DEV_GATEWAY_ADDR					{0x64,0x01,0X20,0X19,0X09,0X16,0X00,0X01} 	//网关地址
-#define SYS_PARAM_DEV_LONG_ADDR						{0XC8,0X01,0X20,0X19,0X08,0X12,0X00,0X02} 	//测点长地址
+#define SYS_PARAM_DEV_LONG_ADDR						{0XC8,0X01,0X20,0X19,0X08,0X12,0X00,0X01} 	//测点长地址
 #define SYS_PARAM_DEV_SHORT_ADDR					{0x01,0x01} 								//测点短地址
 
 /* IOT倾角配置参数 */
 #define SYS_PARAM_IOT_I_MODE						0 			//数据采样模式[0:周期模式,1:相对阈值模式,2:绝对阈值模式]
-#define SYS_PARAM_IOT_I_SAMPLE_INTERVAL				600 			//3600 //数据采样间隔，单位s
+#define SYS_PARAM_IOT_I_SAMPLE_INTERVAL				10 			//3600 //数据采样间隔，单位s
 #define SYS_PARAM_IOT_I_X_ANGLE_THRESHOLD			(float)80.1	//阈值模式下的X轴角度阈值
 #define SYS_PARAM_IOT_I_Y_ANGLE_THRESHOLD			(float)80.2	//阈值模式下的Y轴角度阈值
 #define SYS_PARAM_IOT_I_Z_ANGLE_THRESHOLD			(float)80.3	//阈值模式下的Y轴角度阈值
 	
 /* IOT崩塌计配置参数 */
 #define SYS_PARAM_IOT_C_MODE						0			//0：周期模式，1：触发模式
-#define SYS_PARAM_IOT_C_SAMPLE_PERIOD				20 			//3600//周期模式下的采样频率，单位s
+#define SYS_PARAM_IOT_C_SAMPLE_PERIOD				10 			//3600//周期模式下的采样频率，单位s
 #define SYS_PARAM_IOT_C_TRIGGER_PERIOD				2 			//触发模式下持续触发时的数据推送频率，单位s
 #define SYS_PARAM_IOT_C_ACCEL_SLOPE_THRESHOLD		100 		//触发模式下的加速度变化的斜率阈值
 #define SYS_PARAM_IOT_C_CONSECUTIVE_DATA_POINTS		2 			//触发模式下连续数据点
@@ -82,6 +83,7 @@
 
 typedef struct {
 	uint8_t iot_mode;
+	uint16_t time_offset;
 	uint32_t iot_sample_interval;
 	float iot_x_angle_threshold;
 	float iot_y_angle_threshold;
@@ -90,6 +92,7 @@ typedef struct {
 
 typedef struct {
 	uint8_t iot_mode;
+	uint16_t time_offset;
 	uint32_t iot_sample_period;
 	uint32_t iot_trigger_period;
 	uint32_t iot_period;
@@ -98,8 +101,9 @@ typedef struct {
 }iot_collapse_t;
 
 typedef struct {
-	uint8_t update_flag;
-	uint8_t object_version;
+	uint8_t dev_long_addr[8];
+	uint8_t dev_gateway_addr[8];
+	uint8_t dev_short_addr[2];
 	
 	uint8_t ble_tx_power;
 	uint16_t ble_adv_interval;
@@ -117,14 +121,12 @@ typedef struct {
 	uint8_t lora_preamble;
 	uint8_t lora_header;
 	uint8_t lora_crc;
-	
-	uint8_t dev_gateway_addr[8];
-	uint8_t dev_long_addr[8];
-	uint8_t dev_short_addr[2];
-	
+
 	iot_clinometer_t iot_clinometer;
 	iot_collapse_t iot_collapse;
 	
+	uint8_t update_flag;
+	uint8_t object_version;
 	uint8_t (*save_param_to_flash)(void);
 } sys_param_t;
 
@@ -132,7 +134,8 @@ void sys_param_init(void);
 uint8_t sys_save_param_to_flash(void);
 sys_param_t* sys_param_get_handle(void);
 void sys_param_set(uint8_t* param, uint8_t* value, uint8_t len);
-
+void sys_enter_dfu(void);
+void sys_reset(void);
 
 #endif
 

@@ -14,6 +14,7 @@
 #include "flash.h"
 #include "nrf_fstorage.h"
 #include "math.h"
+#include "string.h"
 
 #ifdef SOFTDEVICE_PRESENT
 #include "nrf_sdh.h"
@@ -26,10 +27,22 @@
 #endif
 
 
+static void power_manage(void)
+{
+#ifdef SOFTDEVICE_PRESENT
+	(void) sd_app_evt_wait();
+#else
+	__WFE();
+#endif
+}
+	
 static void wait_for_flash_ready(nrf_fstorage_t const * p_fstorage)
 {
     /* While fstorage is busy, sleep and wait for an event. */
-    while (nrf_fstorage_is_busy(p_fstorage));
+    while (nrf_fstorage_is_busy(p_fstorage))
+    {
+        power_manage();
+    }
 }
 
 static uint32_t nrf_flash_end_addr_get()
@@ -44,7 +57,6 @@ static uint32_t nrf_flash_end_addr_get()
 
 static void fstorage_evt_handler(nrf_fstorage_evt_t* p_evt)
 {
-	
 	if(p_evt->result != NRF_SUCCESS) //FS²Ù×÷´íÎó
 	{
 		return;
@@ -66,6 +78,8 @@ static void fstorage_evt_handler(nrf_fstorage_evt_t* p_evt)
 
 NRF_FSTORAGE_DEF(nrf_fstorage_t nrf_flash_write) = {
 	.evt_handler = fstorage_evt_handler,
+    .start_addr = ADDR_FLASH_PAGE_73,
+    .end_addr   = ADDR_FLASH_PAGE_82,
 };	
 
 #ifdef SOFTDEVICE_PRESENT
@@ -84,8 +98,6 @@ void fs_flash_init(void)
 {
 	uint32_t err_code;
 	err_code = nrf_fstorage_init(&nrf_flash_write, p_fs_api, NULL);
-	nrf_flash_write.start_addr = 0x0;
-	nrf_flash_write.end_addr = nrf_flash_end_addr_get();
 	APP_ERROR_CHECK(err_code);
 }
 
@@ -113,14 +125,32 @@ uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)
 					 (((endAddr - pageStartAddr) >> TH_FLASH_PAGE_SIZE_2_POWER) + 1) :
 					  ((endAddr - pageStartAddr) >> TH_FLASH_PAGE_SIZE_2_POWER);	
 	
-	err_code = nrf_fstorage_erase(&nrf_flash_write, pageStartAddr, pageNb, NULL);
+	uint8_t err_cnt = 5;
+	while(err_cnt--)
+	{
+		err_code = nrf_fstorage_erase(&nrf_flash_write, pageStartAddr, pageNb, NULL);
+		if(err_code == NRF_SUCCESS)
+		{
+			break;
+		}
+	}
 	APP_ERROR_CHECK(err_code);
-	
-	err_code = nrf_fstorage_write(&nrf_flash_write, pageStartAddr, pData, 4*size, NULL);
-	APP_ERROR_CHECK(err_code);
-	
-	wait_for_flash_ready(&nrf_flash_write);
 
+	wait_for_flash_ready(&nrf_flash_write);
+	
+	err_cnt = 5;
+	while(err_cnt--)
+	{
+		err_code = nrf_fstorage_write(&nrf_flash_write, pageStartAddr, pData, 4*size, NULL);
+		if(err_code == NRF_SUCCESS)
+		{
+			break;
+		}
+	}
+	APP_ERROR_CHECK(err_code);
+
+	wait_for_flash_ready(&nrf_flash_write);
+	
 	return err_code;
 }
 
@@ -132,9 +162,10 @@ uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)
 *******************************************************************************/
 void flash_read(uint32_t startAddr, uint8_t *pData, uint32_t size)
 {
-	uint32_t err_code;
-	err_code = nrf_fstorage_read(&nrf_flash_write, startAddr, pData, size);
-	APP_ERROR_CHECK(err_code);
+//	uint32_t err_code;
+	memcpy(pData, (uint8_t*)startAddr, size);
+//	err_code = nrf_fstorage_read(&nrf_flash_write, startAddr, pData, size);
+//	APP_ERROR_CHECK(err_code);
 }
 #else
 uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)

@@ -44,11 +44,12 @@ static lora_conn_status_t lora_pre_conn_status = LORA_OFFLINE;
  1：协议属性值模式
  4：协议属性值采样间隔
  4：协议属性值时间戳
+ 2：协议属性值时间偏移
  2：协议属性值加速度斜率阈值
  2：协议属性值连续数据点
  2：协议CRC校验
  */
-static uint8_t collapse_max_wait_reply_len = 4 + 1 + 2 + 1 + 7 + 8 + 2 + 1 + 4 + 4 + 2 + 2 + 2;
+static uint8_t collapse_max_wait_reply_len = 4 + 1 + 2 + 1 + 7 + 8 + 2 + 1 + 4 + 4 + 2 + 2 + 2 + 2;
 
 /**
  等待网关回复最大数据长度
@@ -62,12 +63,13 @@ static uint8_t collapse_max_wait_reply_len = 4 + 1 + 2 + 1 + 7 + 8 + 2 + 1 + 4 +
  1：协议属性值模式
  4：协议属性值采样间隔
  4：协议属性值时间戳
+ 2：协议属性值时间偏移
  4：协议属性值X轴角度阈值
  4：协议属性值Y轴角度阈值
  4：协议属性值Z轴角度阈值
  2：协议CRC校验
  */
-static uint8_t clinometer_max_wait_reply_len = 4 + 1 + 2 + 1 + 8 + 8 + 2 + 1 + 4 + 4 + 4 + 4 + 4 + 2;
+static uint8_t clinometer_max_wait_reply_len = 4 + 1 + 2 + 1 + 8 + 8 + 2 + 1 + 4 + 4 + 2 + 4 + 4 + 4 + 2;
 
 /* SPI驱动程序实例ID,ID和外设编号对应，0:SPI0  1:SPI1 2:SPI2 */
 #define SPI_INSTANCE  0 
@@ -401,8 +403,6 @@ static void lora_i_load_publish_cmd_buf(void)
 	lora_tx_count += 1;
 	
 	/* 数据段属性ID */
-	lora_tx_buf[lora_tx_count] = 6;
-	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 7;
 	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 8;
@@ -411,16 +411,12 @@ static void lora_i_load_publish_cmd_buf(void)
 	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 10;
 	lora_tx_count += 1;
-	
-	/* 数据段属性数据 */
-	wirelessCommSvc->_sensor->readPropToBuf(6, &lora_tx_buf[lora_tx_count]);
+	lora_tx_buf[lora_tx_count] = 11;
 	lora_tx_count += 1;
 	
+	/* 数据段属性数据 */
 	wirelessCommSvc->_sensor->readPropToBuf(7, &lora_tx_buf[lora_tx_count]);
-#if (COMM_TRANSMISSION_FORMAT == 1)
-	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
-#endif
-	lora_tx_count += 4;
+	lora_tx_count += 1;
 	
 	wirelessCommSvc->_sensor->readPropToBuf(8, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
@@ -435,6 +431,12 @@ static void lora_i_load_publish_cmd_buf(void)
 	lora_tx_count += 4;
 	
 	wirelessCommSvc->_sensor->readPropToBuf(10, &lora_tx_buf[lora_tx_count]);
+#if (COMM_TRANSMISSION_FORMAT == 1)
+	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
+#endif
+	lora_tx_count += 4;
+	
+	wirelessCommSvc->_sensor->readPropToBuf(11, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
 	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
 #endif
@@ -482,8 +484,6 @@ static void lora_c_load_publish_cmd_buf(void)
 	lora_tx_count += 1;
 	
 	/* 数据段属性ID */
-	lora_tx_buf[lora_tx_count] = 8;
-	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 9;
 	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 10;
@@ -492,24 +492,20 @@ static void lora_c_load_publish_cmd_buf(void)
 	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 12;
 	lora_tx_count += 1;
-#if (IOT_PROTOCOL_C_WITH_ANGLE == 1)
 	lora_tx_buf[lora_tx_count] = 13;
 	lora_tx_count += 1;
+#if (IOT_PROTOCOL_C_WITH_ANGLE == 1)
 	lora_tx_buf[lora_tx_count] = 14;
 	lora_tx_count += 1;
 	lora_tx_buf[lora_tx_count] = 15;
 	lora_tx_count += 1;
+	lora_tx_buf[lora_tx_count] = 16;
+	lora_tx_count += 1;
 #endif
 	
 	/* 数据段属性数据 */
-	wirelessCommSvc->_sensor->readPropToBuf(8, &lora_tx_buf[lora_tx_count]);
-	lora_tx_count += 1;
-	
 	wirelessCommSvc->_sensor->readPropToBuf(9, &lora_tx_buf[lora_tx_count]);
-#if (COMM_TRANSMISSION_FORMAT == 1)
-	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
-#endif
-	lora_tx_count += 4;
+	lora_tx_count += 1;
 	
 	wirelessCommSvc->_sensor->readPropToBuf(10, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
@@ -529,13 +525,13 @@ static void lora_c_load_publish_cmd_buf(void)
 #endif
 	lora_tx_count += 4;
 	
-#if (IOT_PROTOCOL_C_WITH_ANGLE == 1)
 	wirelessCommSvc->_sensor->readPropToBuf(13, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
 	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
 #endif
 	lora_tx_count += 4;
 	
+#if (IOT_PROTOCOL_C_WITH_ANGLE == 1)
 	wirelessCommSvc->_sensor->readPropToBuf(14, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
 	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
@@ -543,6 +539,12 @@ static void lora_c_load_publish_cmd_buf(void)
 	lora_tx_count += 4;
 	
 	wirelessCommSvc->_sensor->readPropToBuf(15, &lora_tx_buf[lora_tx_count]);
+#if (COMM_TRANSMISSION_FORMAT == 1)
+	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
+#endif
+	lora_tx_count += 4;
+	
+	wirelessCommSvc->_sensor->readPropToBuf(16, &lora_tx_buf[lora_tx_count]);
 #if (COMM_TRANSMISSION_FORMAT == 1)
 	swap_reverse((uint8_t*)&lora_tx_buf[lora_tx_count], 4);
 #endif

@@ -9,11 +9,11 @@ typedef struct {
 	uint16_t milsecond;
 	uint32_t second;
 	uint32_t sumtime;
-}sys_time;
+}sys_time_t;
 
 void hw_timer_start(void);
 void hw_timer_stop(void);
-sys_time* hw_timer_get_sys_time(void);
+sys_time_t* hw_timer_get_sys_time(void);
 
 
 #endif

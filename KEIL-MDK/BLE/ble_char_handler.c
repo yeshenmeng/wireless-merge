@@ -37,6 +37,7 @@
 #define MISC_TIMER_TIME_WRITE			0x04
 #define MISC_COMM_INTERVAL_WRITE		0x08
 #define MISC_COMM_CTRL_WEITE			0x10
+#define MISC_OTA_WEITE					0x20
 
 #define VERIFY_DATA(data, range, len)       			\
 do                                                      \
@@ -67,6 +68,7 @@ typedef struct {
 	int32_t upper;
 }range_t;
 
+static uint8_t misc_param_ota = 0;
 static uint32_t ble_param_req = 0;
 static uint32_t lora_param_req = 0;
 static uint32_t dev_param_req = 0;
@@ -323,6 +325,12 @@ void ble_comm_ctrl_write_handler(uint8_t* p_data, uint16_t len){
 	llrt_mod_t* llrt_mod = llrt_get_handle();
 	llrt_param_set((uint8_t*)&llrt_mod->comm_ctrl, p_data, len);
 }
+
+void ble_ota_write_handler(uint8_t* p_data, uint16_t len)
+{
+	misc_param_req |= MISC_OTA_WEITE;
+	misc_param_ota = *p_data;
+}
 	
 static void ble_cfg_char_change_handler(void)
 {
@@ -440,7 +448,7 @@ static void dev_cfg_char_change_handler(void)
 			param->object_version = param->dev_long_addr[0];
 			param->update_flag = 1;
 			param->save_param_to_flash();
-			APP_ERROR_CHECK(1);
+			sys_reset();
 		}
 	}
 	
@@ -496,6 +504,17 @@ static void misc_svc_char_change_handler(void)
 		else if(llrt_mod->comm_ctrl == LLRT_CTRL_STOP)
 		{
 			llrt_stop();
+		}
+	}
+	
+	if(misc_param_req & MISC_OTA_WEITE)
+	{
+		misc_param_req &= ~MISC_OTA_WEITE;
+		
+		if(misc_param_ota == 1)
+		{
+			misc_param_ota = 0;
+			sys_enter_dfu();
 		}
 	}
 }

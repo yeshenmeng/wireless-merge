@@ -42,6 +42,7 @@ typedef struct {
 	void (*dev_lora_rssi_update)(uint8_t value);
 	void (*dev_sw_version_update)(uint8_t* value);
 	void (*dev_hw_version_update)(uint8_t* value);
+	void (*dev_time_offset_update)(uint16_t value);
 	
 	void (*misc_payload_length)(uint8_t value);
 	void (*misc_counting_mode)(uint32_t value);
@@ -50,6 +51,7 @@ typedef struct {
 	void (*misc_comm_ctrl_notify)(uint8_t value);
 	void (*misc_lost_rate_notify)(float value);
 	void (*misc_test_progress_notify)(float value);
+	void (*misc_ota)(uint8_t value);
 }ble_char_update_t;
 
 void ble_softdev_init(void);
@@ -64,6 +66,8 @@ void ble_conn_params_change(uint16_t min_interva,
 							uint16_t slave_latency, 
 							uint16_t conn_timeout);
 ble_char_update_t* ble_char_update_handle_get(void);
+uint16_t ble_conn_handle_get(void);
+
 
 #endif
 

@@ -13,8 +13,8 @@ static uint8_t llrt_start_flag;
 static llrt_status_t llrt_status;
 static uint32_t test_start_time = 0;
 
-static uint8_t collapse_max_wait_reply_len = 4 + 1 + 2 + 1 + 7 + 8 + 2 + 1 + 4 + 4 + 2 + 2 + 2;
-static uint8_t clinometer_max_wait_reply_len = 4 + 1 + 2 + 1 + 8 + 8 + 2 + 1 + 4 + 4 + 4 + 4 + 4 + 2;
+static uint8_t collapse_max_wait_reply_len = 4 + 1 + 2 + 1 + 7 + 8 + 2 + 1 + 4 + 4 + 2 + 2 + 2 + 2;
+static uint8_t clinometer_max_wait_reply_len = 4 + 1 + 2 + 1 + 8 + 8 + 2 + 1 + 4 + 4 + 2 + 4 + 4 + 4 + 2;
 
 void swt_llrt_timer_cb(void* param)
 {

@@ -210,7 +210,10 @@ void _loadPropFromFlash() {
 
 static void _init() {
 	_initPropStartIds();
+	
+#if 0	
 	_loadPropFromFlash();
+#endif	
 }
 
 iot_object_t * createSensorHandler(void) {

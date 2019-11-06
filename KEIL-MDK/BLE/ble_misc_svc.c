@@ -33,6 +33,11 @@ static void on_write(ble_misc_t * p_misc, ble_evt_t const * p_ble_evt)
 	{
 		p_misc->comm_ctrl_write_handler((uint8_t*)&p_evt_write->data[0], p_evt_write->len);
 	}
+    else if ((p_evt_write->handle == p_misc->ota_char_handles.value_handle)
+			 && (p_misc->comm_ota_write_handler != NULL))
+	{
+		p_misc->comm_ota_write_handler((uint8_t*)&p_evt_write->data[0], p_evt_write->len);
+	}
 }
 
 void ble_misc_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
@@ -63,6 +68,7 @@ uint32_t ble_misc_init(ble_misc_t * p_misc, const ble_misc_init_t * p_misc_init)
 	p_misc->timer_mode_write_handler = p_misc_init->timer_mode_write_handler;
 	p_misc->comm_interval_write_handler = p_misc_init->comm_interval_write_handler;
 	p_misc->comm_ctrl_write_handler = p_misc_init->comm_ctrl_write_handler;
+	p_misc->comm_ota_write_handler = p_misc_init->comm_ota_write_handler;
 
     // Add service.
     ble_uuid128_t base_uuid = {MISC_UUID_BASE};
@@ -142,7 +148,27 @@ uint32_t ble_misc_init(ble_misc_t * p_misc, const ble_misc_init_t * p_misc_init)
 	
 	add_char_params.uuid = MISC_UUID_TEST_PROGRESS_CHAR;
 	add_char_params.cccd_write_access = SEC_OPEN;
-    return characteristic_add(p_misc->service_handle, &add_char_params, &p_misc->test_progress_char_handles);
+    err_code = characteristic_add(p_misc->service_handle, &add_char_params, &p_misc->test_progress_char_handles);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+	
+    add_char_params.uuid              = MISC_UUID_OTA_CHAR;
+    add_char_params.init_len          = 1;
+    add_char_params.max_len           = 1;
+    add_char_params.char_props.read   = 1;
+    add_char_params.char_props.write  = 1;
+	add_char_params.char_props.notify = 0;
+    add_char_params.read_access       = SEC_OPEN;
+    add_char_params.write_access 	  = SEC_OPEN;
+    err_code = characteristic_add(p_misc->service_handle, &add_char_params, &p_misc->ota_char_handles);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+	
+	return 0;
 }
 
 

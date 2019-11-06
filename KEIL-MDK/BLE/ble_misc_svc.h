@@ -14,7 +14,7 @@ extern "C" {
 #define BLE_MISC_BLE_OBSERVER_PRIO	2
 #define BLE_MISC_DEF(_name)                                                                     \
 static ble_misc_t _name;                                                                        \
-NRF_SDH_BLE_OBSERVER(_name ## _obs,                                                                 \
+NRF_SDH_BLE_OBSERVER(_name ## _obs,                                                             \
                      BLE_MISC_BLE_OBSERVER_PRIO,                                                \
                      ble_misc_on_ble_evt, &_name)
 
@@ -28,7 +28,8 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define MISC_UUID_COMM_CTRL_CHAR			(MISC_UUID_SERVICE+5)
 #define MISC_UUID_LOST_RATE_CHAR			(MISC_UUID_SERVICE+6)
 #define MISC_UUID_TEST_PROGRESS_CHAR		(MISC_UUID_SERVICE+7)
-
+#define MISC_UUID_OTA_CHAR					(MISC_UUID_SERVICE+8)
+											 
 // Forward declaration of the ble_dev_cfg_t type.
 typedef struct ble_misc_s ble_misc_t;
 
@@ -37,6 +38,7 @@ typedef void (*ble_misc_counting_mode_write_handler_t) (uint8_t* p_data, uint16_
 typedef void (*ble_misc_timer_mode_write_handler_t) (uint8_t* p_data, uint16_t len);
 typedef void (*ble_misc_comm_interval_write_handler_t) (uint8_t* p_data, uint16_t len);
 typedef void (*ble_misc_comm_ctrl_write_handler_t) (uint8_t* p_data, uint16_t len);
+typedef void (*ble_misc_comm_ota_write_handler_t) (uint8_t* p_data, uint16_t len);
 //typedef uint8_t (*ble_misc_lost_rate_write_handler_t) (uint8_t* p_data, uint16_t len);
 
 /** @brief LED Button Service init structure. This structure contains all options and data needed for
@@ -48,6 +50,7 @@ typedef struct
 	ble_misc_timer_mode_write_handler_t timer_mode_write_handler;
 	ble_misc_comm_interval_write_handler_t comm_interval_write_handler;
 	ble_misc_comm_ctrl_write_handler_t comm_ctrl_write_handler;
+	ble_misc_comm_ota_write_handler_t comm_ota_write_handler;
 } ble_misc_init_t;
 
 /**@brief LED Button Service structure. This structure contains various status information for the service. */
@@ -61,12 +64,14 @@ struct ble_misc_s
     ble_gatts_char_handles_t    comm_ctrl_char_handles;  
     ble_gatts_char_handles_t    lost_rate_char_handles; 
 	ble_gatts_char_handles_t	test_progress_char_handles;
+	ble_gatts_char_handles_t	ota_char_handles;
     uint8_t                     uuid_type;           /**< UUID type for the Service. */
     ble_misc_payload_length_write_handler_t payload_length_write_handler; /**< Event handler to be called when the Characteristic is written. */
 	ble_misc_counting_mode_write_handler_t counting_mode_write_handler;
 	ble_misc_timer_mode_write_handler_t timer_mode_write_handler;
 	ble_misc_comm_interval_write_handler_t comm_interval_write_handler;
 	ble_misc_comm_ctrl_write_handler_t comm_ctrl_write_handler;
+	ble_misc_comm_ota_write_handler_t comm_ota_write_handler;
 };
 
 

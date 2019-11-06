@@ -60,6 +60,14 @@ static void slp_operate(void)
 				sample_interval = llrt_mod->comm_interval;
 			}
 			slp_obj.sleep_time = sample_interval - time_stamp % sample_interval;
+			if(param->object_version == INCLINOMETER_VERSION)
+			{
+				slp_obj.sleep_time += param->iot_clinometer.time_offset;
+			}
+			else if(param->object_version == COLLAPSE_VERSION)
+			{
+				slp_obj.sleep_time += param->iot_collapse.time_offset;
+			}
 			timer->sys_low_power->start(slp_obj.sleep_time*1000);
 			slp_obj.lpm_obj->task_set_stat(SLP_TASK_ID, LPM_TASK_STA_LP);
 			break;
