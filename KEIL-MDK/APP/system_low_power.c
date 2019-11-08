@@ -68,6 +68,7 @@ static void slp_operate(void)
 			{
 				slp_obj.sleep_time += param->iot_collapse.time_offset;
 			}
+//			slp_obj.sleep_time = 600;
 			timer->sys_low_power->start(slp_obj.sleep_time*1000);
 			slp_obj.lpm_obj->task_set_stat(SLP_TASK_ID, LPM_TASK_STA_LP);
 			break;

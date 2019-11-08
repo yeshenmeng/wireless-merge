@@ -133,6 +133,7 @@ uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)
 		{
 			break;
 		}
+		nrf_delay_us(50);
 	}
 	APP_ERROR_CHECK(err_code);
 
@@ -146,6 +147,7 @@ uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)
 		{
 			break;
 		}
+		nrf_delay_us(50);
 	}
 	APP_ERROR_CHECK(err_code);
 
@@ -158,7 +160,7 @@ uint8_t flash_write(uint32_t pageStartAddr, uint32_t *pData, uint32_t size)
 * Function Name  : flash_read
 * Description    : flash的读函数
 * Input          : u32 startAddr,u32 *p_data,u32 size
-* Attention		 : 输入数据一定是u32 的指针，即数据一定是按照4字节对齐写入的。所以：size也是u32的个数（字节数的4分之一）
+* Attention		 : NONE
 *******************************************************************************/
 void flash_read(uint32_t startAddr, uint8_t *pData, uint32_t size)
 {

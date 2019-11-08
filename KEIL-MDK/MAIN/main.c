@@ -168,7 +168,7 @@ void lpm_exit_handler(void)
 		NRF_POWER->DCDCEN = 1; //退出低功耗打开DCDC
 	}
 }
-
+uint32_t sys_cnt = 0;
 /**@brief Function for application main entry.
  */
 int main(void)
@@ -233,7 +233,7 @@ int main(void)
 		sys_task_schd();
 		
 		/* 低功耗管理任务运行 */
-//		m_lpm->task_operate(lpm_enter_handler, lpm_exit_handler);
+		m_lpm->task_operate(lpm_enter_handler, lpm_exit_handler);
 		
 		/* BLE任务运行 */
 		m_ble->task_operate();
@@ -266,7 +266,8 @@ int main(void)
 		/* 蓝牙数据协议处理 */
 		ble_char_req_handler();
 	
-//		uart_run();
+//		sys_cnt++;
+		uart_run();
 	}
 }
 

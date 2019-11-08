@@ -215,42 +215,60 @@ static uint16_t collapse_config_accelerometer(void)
 	
 	ret |= bma4_set_advance_power_save(BMA4_ENABLE, &bma456_dev);
 	nrf_delay_ms(1);
+
+	return ret;
+}
+
+static uint16_t collapse_enable(uint8_t accel_en)
+{
+	uint16_t ret = BMA4_OK;
+	 
+	if(accel_en == 1)
+	{
+		/* Enable the accelerometer */
+		ret |= bma4_set_accel_enable(1, &bma456_dev);
+	}
+	else if(accel_en == 0)
+	{
+		/* disable the accelerometer */
+		ret |= bma4_set_accel_enable(0, &bma456_dev);
+	}
 	
-	/* Enable the accelerometer */
-	bma4_set_accel_enable(1, &bma456_dev);
-	nrf_delay_ms(1);	
-	
+	nrf_delay_ms(1);
 	return ret;
 }
 
 static float collapse_read_temperature(void)
 {
-	uint8_t err_cnt = 5;
+//	uint8_t err_cnt = 5;
 	float temp = 0;
 	int32_t tmp; 
 	
-	while(err_cnt--)
-	{
-		/* Get temperature in degree C */
-		if(BMA4_OK != bma4_get_temperature(&tmp, BMA4_DEG, &bma456_dev))
-		{
-			continue;
-		}
-		
-		if(((tmp - 23) / BMA4_SCALE_TEMP) == 0x80) 
-		{
-			continue;
-		}
-		
-		temp = (float)tmp / (float)BMA4_SCALE_TEMP;
-		if(temp < -40 || temp > 85)
-		{
-			temp = 0;
-			continue;
-		}
-		
-		break;
-	}
+//	while(err_cnt--)
+//	{
+//		/* Get temperature in degree C */
+//		if(BMA4_OK != bma4_get_temperature(&tmp, BMA4_DEG, &bma456_dev))
+//		{
+//			continue;
+//		}
+//		
+//		if(((tmp - 23) / BMA4_SCALE_TEMP) == 0x80) 
+//		{
+//			continue;
+//		}
+//		
+//		temp = (float)tmp / (float)BMA4_SCALE_TEMP;
+//		if(temp < -40 || temp > 85)
+//		{
+//			temp = 0;
+//			continue;
+//		}
+//		
+//		break;
+//	}
+	
+	sd_temp_get(&tmp);
+	temp = tmp * 1.0 / 4;
 	
 	return temp;
 }
@@ -735,7 +753,9 @@ static void collapse_operate(void)
 		collapse_obj.lpm_obj->task_set_stat(COLLAPSE_TASK_ID, LPM_TASK_STA_RUN);
 		if(collapse_obj.mode == PERIOD_MODE)
 		{
+			collapse_enable(1);
 			collapse_period_data_filter();
+			collapse_enable(0);
 		}
 		
 		sens_data_t sens_data_tmp;
@@ -860,6 +880,7 @@ uint16_t collapse_iot_set_mode(void)
 	else if(collapse_obj.mode == TRIGGER_MODE)
 	{
 //		collapse_cfg();
+		collapse_enable(1);
 		
 		/* ≈‰÷√Ãÿ’˜ */
 		ret |= collapse_config_feature();
@@ -911,6 +932,7 @@ collapse_obj_t* collapse_init(lpm_obj_t* lpm_obj)
 	
 	if(collapse_obj.mode == TRIGGER_MODE)
 	{
+		collapse_enable(1);
 		ret |= collapse_config_feature(); 				//≈‰÷√Ãÿ’˜
 #if (BMA456_USE_FIFO == 1)
 		ret |= collapse_config_fifo_buffer(); 			//≈‰÷√FIFOª∫¥Ê

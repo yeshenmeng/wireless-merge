@@ -73,6 +73,7 @@ static uint32_t ble_param_req = 0;
 static uint32_t lora_param_req = 0;
 static uint32_t dev_param_req = 0;
 static uint32_t misc_param_req = 0;
+static uint8_t sys_reset_flag = 0;
 
 static range_t ble_tx_power_range = {
 	.lower = 0,
@@ -273,18 +274,30 @@ void ble_dev_gateway_write_handler(uint8_t* p_data, uint16_t len){
 	dev_param_req |= DEV_GATEWAY_ADDR_WRITE;
 	sys_param_t* param = sys_param_get_handle();
 	sys_param_set((uint8_t*)&param->dev_gateway_addr, p_data, len);
+	if(param->update_flag == 1)
+	{
+		sys_reset_flag = 1;
+	}
 }
 
 void ble_dev_long_addr_write_handler(uint8_t* p_data, uint16_t len){
 	dev_param_req |= DEV_LONG_ADDR_WRITE;
 	sys_param_t* param = sys_param_get_handle();
 	sys_param_set((uint8_t*)&param->dev_long_addr, p_data, len);
+	if(param->update_flag == 1)
+	{
+		sys_reset_flag = 1;
+	}
 }
 
 void ble_dev_short_addr_write_handler(uint8_t* p_data, uint16_t len){
 	dev_param_req |= DEV_SHORT_ADDR_WRITE;
 	sys_param_t* param = sys_param_get_handle();
 	sys_param_set((uint8_t*)&param->dev_short_addr, p_data, len);
+	if(param->update_flag == 1)
+	{
+		sys_reset_flag = 1;
+	}
 }
 
 void ble_dev_time_stamp_read_handler(uint8_t* p_data, uint16_t* len)
@@ -435,21 +448,26 @@ static void dev_cfg_char_change_handler(void)
 		dev_param_req &= ~DEV_GATEWAY_ADDR_WRITE;
 		dev_param_req &= ~DEV_LONG_ADDR_WRITE;
 		dev_param_req &= ~DEV_SHORT_ADDR_WRITE;
-		sys_param_t* param = sys_param_get_handle();
-		iot_write_long_addr(param->dev_long_addr);
-		iot_write_short_addr(param->dev_short_addr);
-		lora_reset();
+//		sys_param_t* param = sys_param_get_handle();
+//		iot_write_long_addr(param->dev_long_addr);
+//		iot_write_short_addr(param->dev_short_addr);
+//		lora_reset();
 		
-		/* 对象版本改变后保存参数复位设备 */
-		if(param->object_version != param->dev_long_addr[0] &&
-		   (param->dev_long_addr[0] == INCLINOMETER_VERSION ||
-			param->dev_long_addr[0] == COLLAPSE_VERSION))
+		if(sys_reset_flag == 1)
 		{
-			param->object_version = param->dev_long_addr[0];
-			param->update_flag = 1;
-			param->save_param_to_flash();
 			sys_reset();
 		}
+		
+//		/* 对象版本改变后保存参数复位设备 */
+//		if(param->object_version != param->dev_long_addr[0] &&
+//		   (param->dev_long_addr[0] == INCLINOMETER_VERSION ||
+//			param->dev_long_addr[0] == COLLAPSE_VERSION))
+//		{
+//			param->object_version = param->dev_long_addr[0];
+//			param->update_flag = 1;
+//			param->save_param_to_flash();
+//			sys_reset();
+//		}
 	}
 	
 	if(dev_param_req & DEV_TIME_STAMP_READ)

@@ -49,7 +49,8 @@ void sys_startup(void)
 #endif
 	}
 	
-	SET_TASK_EVT(SYS_TASK_EVT_BLE);
+//	SET_TASK_EVT(SYS_TASK_EVT_BLE);
+//	SET_TASK_EVT(SYS_TASK_EVT_SYS_LP);
 }
 
 void sys_task_schd(void)
@@ -99,7 +100,7 @@ void sys_task_schd(void)
 /* 蓝牙任务停止事件 */
 void ble_task_stop_handler(void* param)
 {
-	SET_TASK_EVT(SYS_TASK_EVT_BLE);
+//	SET_TASK_EVT(SYS_TASK_EVT_BLE);
 	
 	if(lora_disconn == 1)
 	{

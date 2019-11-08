@@ -64,6 +64,7 @@ void sys_param_init(void)
 		sys_param.object_version = sys_param.dev_long_addr[0];
 	}
 	
+//	sys_param.lora_freq = 440;
 	sys_param.save_param_to_flash = sys_save_param_to_flash;
 }
 
