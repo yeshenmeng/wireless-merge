@@ -221,7 +221,8 @@ static void ble_task_operate(void)
 ble_obj_t* ble_init(lpm_obj_t* lpm_obj)
 {
 	sys_param_t* param = sys_param_get_handle();
-	ble_conn_time = param->ble_max_conn_interval;
+//	ble_conn_time = param->ble_max_conn_interval;
+	ble_conn_time = 500;
 	
 	ble_obj.param.is_idle_enter_lp = ENABLE;
 	ble_state = BLE_STA_IDLE;
