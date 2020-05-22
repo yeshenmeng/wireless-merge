@@ -153,7 +153,6 @@ void lpm_enter_handler(void)
 	}
 }
 
-
 /* 退出低功耗时的处理 */
 void lpm_exit_handler(void)
 {

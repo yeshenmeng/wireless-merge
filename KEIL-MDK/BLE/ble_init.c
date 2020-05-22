@@ -18,6 +18,7 @@
 #include "ble_misc_svc.h"
 #include "sys_param.h"
 #include "lora_lost_rate_test.h"
+#include "rng_lpm.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -1274,6 +1275,27 @@ ble_char_update_t* ble_char_update_handle_get(void)
 	return &ble_char_update;
 }
 
+void ble_mac_addr_set(void)
+{
+	rng_lpm_mod_t* rng_lpm_mod = rng_lpm_get_handle();
+	rng_lpm_mod->ramdom_lower = 1; //地址不能全为0或者全为1
+	rng_lpm_mod->ramdom_upper = ~0;
+	uint32_t random_addr_buf1;
+	uint32_t random_addr_buf2;
+	rng_lpm_mod->generate_random_number((uint32_t*)&random_addr_buf1, 1);
+	rng_lpm_mod->generate_random_number((uint32_t*)&random_addr_buf2, 1);
+	
+	ble_gap_addr_t addr;
+	uint32_t err_code = sd_ble_gap_addr_get(&addr);
+	APP_ERROR_CHECK(err_code);
+	
+	memcpy(addr.addr, &random_addr_buf1, sizeof(random_addr_buf1));
+	addr.addr[4] = random_addr_buf2;
+	addr.addr[5] = (random_addr_buf2 >> 8) | 0XC0; //静态随机地址前两位为11
+	err_code = sd_ble_gap_addr_set(&addr);
+	APP_ERROR_CHECK(err_code);
+}
+
 void ble_softdev_init(void)
 {
 	sys_param_t* param = sys_param_get_handle();
@@ -1288,6 +1310,9 @@ void ble_softdev_init(void)
 	services_init(); //服务初始化
 	advertising_init(); //广播初始化
 	conn_params_init(); //连接参数初始化
+
+	nrf_delay_ms(20); //等待随机数发生器产生随机数
+	ble_mac_addr_set(); //MAC地址设置	
 	
 	ble_char_update.ble_tx_power_update(param->ble_tx_power);
 	ble_char_update.ble_adv_interval_update(param->ble_adv_interval);

@@ -24,6 +24,7 @@ static void rng_lpm_generate_random_number(uint32_t* random_buf, uint32_t size)
 	return;
 }
 
+//ble协议栈会使用到
 void rng_lpm_init(void)
 {
 	uint32_t err_code = nrf_drv_rng_init(NULL);
