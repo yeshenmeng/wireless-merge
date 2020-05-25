@@ -3,11 +3,15 @@
 #include "main.h"
 
 
-typedef void (*timer_ic_cplt_cb_t)(uint32_t value);
+typedef void (*timer_ic_cplt_cb_t)(double freq_hz);
 typedef struct {
-	void (*task_start)(uint32_t time);
+	void (*task_timer_start)(uint32_t time);
+	void (*task_timer_init)(uint8_t ic_isr_pin, timer_ic_cplt_cb_t cb);
+	
+	void (*task_counter_init)(uint8_t ic_isr_pin, timer_ic_cplt_cb_t cb);
+	void (*task_counter_start)(uint32_t counter);
+	
 	void (*task_stop)(void);
-	void (*task_init)(uint8_t ic_isr_pin, timer_ic_cplt_cb_t cb);
 	void (*task_uninit)(void);
 }timer_ic_t;
 
