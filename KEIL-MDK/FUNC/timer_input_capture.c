@@ -22,6 +22,7 @@ static void timer_time_handler(nrf_timer_event_t event_type, void * p_context)
 	if(event_type == NRF_TIMER_EVENT_COMPARE0)
 	{
 		uint32_t value = nrfx_timer_capture(&counter_timer, NRF_TIMER_CC_CHANNEL0);
+		value += 1;
 		nrf_drv_timer_disable(&time_timer);
 		nrf_drv_timer_disable(&counter_timer);
 		nrfx_gpiote_in_event_disable(ic_sig_pin);
@@ -52,7 +53,7 @@ static void timer_counter_handler(nrf_timer_event_t event_type, void * p_context
 	}
 }
 
-static void gpiote_tiemr_in_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+static void gpiote_timer_in_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
 	if(pin == ic_sig_pin)
 	{
@@ -61,6 +62,7 @@ static void gpiote_tiemr_in_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_pol
 			uint32_t time_tick = nrf_drv_timer_ms_to_ticks(&time_timer, timer_time);
 			nrf_drv_timer_extended_compare(&time_timer, NRF_TIMER_CC_CHANNEL0, 
 										   time_tick, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);	//设置定时器时间
+//			nrfx_timer_enable(&time_timer);	//启动定时器
 			nrf_timer_cc_write(counter_timer.p_reg, NRF_TIMER_CC_CHANNEL0, 0);
 			nrfx_ppi_channel_disable(ppi_channel3);
 			nrfx_ppi_channel_disable(ppi_channel4);
@@ -131,7 +133,7 @@ static void timer_ic_timer_init(uint8_t ic_isr_pin, timer_ic_cplt_cb_t cb)
 	config.pull = NRF_GPIO_PIN_NOPULL;
 	config.is_watcher = false;
 	config.hi_accuracy = true;
-	err_code = nrf_drv_gpiote_in_init(ic_sig_pin, &config, gpiote_tiemr_in_pin_handler);
+	err_code = nrf_drv_gpiote_in_init(ic_sig_pin, &config, gpiote_timer_in_pin_handler);
 	APP_ERROR_CHECK(err_code);
 	
 	nrfx_gpiote_in_event_disable(ic_sig_pin);
@@ -266,7 +268,7 @@ static void timer_ic_counter_init(uint8_t ic_isr_pin, timer_ic_cplt_cb_t cb)
 	task_addr = nrf_drv_timer_task_address_get(&counter_timer, NRF_TIMER_TASK_START);
 	evt_addr = nrf_drv_gpiote_in_event_addr_get(ic_sig_pin);
 	err_code = nrf_drv_ppi_channel_assign(ppi_channel4, evt_addr, task_addr);
-	APP_ERROR_CHECK(err_code);	
+	APP_ERROR_CHECK(err_code);
 	
 	//PPI通道使能
 	err_code = nrf_drv_ppi_channel_enable(ppi_channel1);
